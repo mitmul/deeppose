@@ -2,9 +2,11 @@
 # -*- coding: utf-8 -*-
 
 import os
+import shutil
+import lmdb
 import glob
-import cv2 as cv
 import numpy as np
+import cv2 as cv
 from scipy.io import loadmat
 
 crop_sizes = {
@@ -44,6 +46,26 @@ def crop_image(joint, img):
             joint[n] = [j[0] - x, j[1] - y]
 
     return joint, img[y:y + h, x:x + w]
+
+
+def get_joint_list(joints):
+    head = np.asarray(joints['reye']) + \
+        np.asarray(joints['leye']) + \
+        np.asarray(joints['nose'])
+    head /= 3
+    del joints['reye']
+    del joints['leye']
+    del joints['nose']
+    joints['head'] = head.tolist()
+    joint_pos = joints['lwri']
+    joint_pos += joints['lelb']
+    joint_pos += joints['lsho']
+    joint_pos += joints['head']
+    joint_pos += joints['rsho']
+    joint_pos += joints['relb']
+    joint_pos += joints['rwri']
+
+    return joint_pos
 
 
 def save_crop_images_and_joints():
@@ -86,12 +108,6 @@ def save_crop_images_and_joints():
                 joint[k][1] /= img.shape[0]
 
         img = np.asarray(img, dtype=np.float64)
-        for ch in range(img.shape[2]):
-            img[:, :, ch] -= np.mean(img[:, :, ch])
-            img[:, :, ch] /= np.std(img[:, :, ch])
-            img[:, :, ch] -= img[:, :, ch].min()
-            img[:, :, ch] /= img[:, :, ch].max()
-            img[:, :, ch] *= 255
         img = cv.resize(img, (227, 227))
 
         out_joints = {}
@@ -102,8 +118,9 @@ def save_crop_images_and_joints():
 
         if len(out_joints) == len(target_joints):
             cv.imwrite('data/FLIC-full/crop/%s' % fname, img)
+            joints = get_joint_list(out_joints)
             np.save('data/FLIC-full/joint/%s' %
-                    fname.split('.')[0], out_joints)
+                    fname.split('.')[0], joints)
             print('{0:10}\t{1}'.format(i, fname))
 
 
@@ -124,6 +141,7 @@ def exclude_black_zone():
         img = img[y:y + h, :, :]
         cv.imwrite('data/FLIC-full/images_c/%s' % os.path.basename(fname), img)
         print fname
+
 
 if __name__ == '__main__':
     exclude_black_zone()
