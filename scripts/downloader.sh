@@ -11,6 +11,9 @@ if [ ! -d data ]; then
     mkdir lspet_dataset
     mv images lspet_dataset/
     mv joints.mat lspet_dataset/
+    mv README.txt lspet_dataset/
     cd ..
 fi
-python scripts/save_crops.py
+python scripts/flic_dataset.py
+python scripts/lsp_dataset.py
+python scripts/dataset.py
