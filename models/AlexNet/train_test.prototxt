@@ -5,8 +5,11 @@ layers {
   top: "data"
   data_param {
     backend: LMDB
-    source: "../../data/FLIC-full/image_train.lmdb"
-    batch_size: 128
+    source: "../../data/image_train.lmdb"
+    batch_size: 256
+  }
+  transform_param {
+    mean_file: "../../data/image_mean.binaryproto"
   }
 }
 layers {
@@ -15,8 +18,8 @@ layers {
   top: "label"
   data_param {
     backend: LMDB
-    source: "../../data/FLIC-full/joint_train.lmdb"
-    batch_size: 128
+    source: "../../data/joint_train.lmdb"
+    batch_size: 256
   }
 }
 layers {

@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import sys
 import glob
 import caffe
 import cv2 as cv
@@ -11,12 +12,10 @@ from skvideo.io import VideoCapture, VideoWriter
 
 def draw_joints(img, net):
     img = cv.resize(img, (227, 227))
-    img = img.swapaxes(0, 2).swapaxes(1, 2)
-    net.blobs['data'].data[:, :, :, :] = img
+    tmp = np.copy(img.swapaxes(0, 2).swapaxes(1, 2))
+    net.blobs['data'].data[:, :, :, :] = tmp
     joints = net.forward().values()[0].flatten()
     joints = np.asarray(joints)
-    img = img.swapaxes(0, 2).swapaxes(0, 1)
-
     joints = joints.reshape((7, 2))
 
     for j, joint in enumerate(joints):
@@ -75,6 +74,7 @@ def test_on_video(net, vid_fn, out_fn):
             print frame
         else:
             print 'finished'
+            break
     cap.release()
     wri.release()
 
@@ -102,12 +102,8 @@ def load_net(net_dir):
     return net
 
 if __name__ == '__main__':
-    net_dir = 'results/AlexNet_2014-11-12_09-59-14'
+    net_dir = sys.argv[1]
     net = load_net(net_dir)
     if not os.path.exists('data/test'):
         os.mkdir('data/test')
-    # test_on_images(net, 'data/FLIC-full/crop', 'FLIC-full', 100)
-    test_on_video(net, 'data/test/yahagi_crop1.mov',
-                  'data/test/yahagi_joint1.avi')
-    test_on_video(net, 'data/test/ogi_crop1.mov',
-                  'data/test/ogi_joint1.avi')
+    test_on_images(net, 'data/FLIC-full/crop', 'data/test', 100)
