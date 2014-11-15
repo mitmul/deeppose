@@ -11,3 +11,7 @@ This script downloads FLIC-full dataset (http://vision.grasp.upenn.edu/cgi-bin/i
     $ bash scripts/train.sh ModelName
 
 where the "ModelName" is the directory name in models dir you want to train with architecture described in.
+
+**NOTE**
+
+I set the caffe directory path to `$HOME/Libraries/caffe` in the `train.sh`. If caffe is located in other place, please modify the path setting.
