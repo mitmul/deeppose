@@ -96,6 +96,7 @@ def load_net(net_dir):
                     for fn in glob.glob(
                         '%s/snapshots/*.caffemodel' % net_dir)])[-1]
     net = caffe.Net('%s/predict.prototxt' % net_dir, fn)
+    net.set_phase_test()
     net.set_mode_gpu()
     print fn
 
