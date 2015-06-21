@@ -19,3 +19,5 @@ This script downloads FLIC-full dataset (http://vision.grasp.upenn.edu/cgi-bin/i
     $ python scripts/train.py --model models/AlexNet.py --gpu 0
 
 See the help messages with `--help` option for details.
+
+- 1 epoch takes 2.75 min on K80.

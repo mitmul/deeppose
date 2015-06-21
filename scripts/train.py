@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import print_function
+import sys
+sys.path.append('../../scripts')  # to resume from result dir
 import argparse
 import logging
 import time
@@ -29,15 +31,20 @@ def load_dataset(args):
 
 
 def create_result_dir(args):
-    # create result dir
-    result_dir = 'results/' + os.path.basename(args.model).split('.')[0]
-    result_dir += '_' + time.strftime('%Y-%m-%d_%H-%M-%S_')
-    result_dir += str(time.time()).replace('.', '')
-    if not os.path.exists(result_dir):
-        os.makedirs(result_dir)
-    log_fn = '%s/log.txt' % result_dir
-    logging.basicConfig(filename=log_fn, level=logging.DEBUG)
-    logging.info(args)
+    if args.restart_from is None:
+        result_dir = 'results/' + os.path.basename(args.model).split('.')[0]
+        result_dir += '_' + time.strftime('%Y-%m-%d_%H-%M-%S_')
+        result_dir += str(time.time()).replace('.', '')
+        if not os.path.exists(result_dir):
+            os.makedirs(result_dir)
+        log_fn = '%s/log.txt' % result_dir
+        logging.basicConfig(filename=log_fn, level=logging.DEBUG)
+        logging.info(args)
+    else:
+        result_dir = '.'
+        log_fn = 'log.txt'
+        logging.basicConfig(filename=log_fn, level=logging.DEBUG)
+        logging.info(args)
 
     return log_fn, result_dir
 
@@ -48,8 +55,13 @@ def get_model_optimizer(result_dir, args):
     module = imp.load_source(model_fn.split('.')[0], args.model)
     Net = getattr(module, model_name)
 
-    shutil.copy(args.model, '%s/%s' % (result_dir, model_fn))
-    shutil.copy(__file__, '%s/%s' % (result_dir, os.path.basename(__file__)))
+    dst = '%s/%s' % (result_dir, model_fn)
+    if not os.path.exists(dst):
+        shutil.copy(args.model, dst)
+
+    dst = '%s/%s' % (result_dir, os.path.basename(__file__))
+    if not os.path.exists(dst):
+        shutil.copy(__file__, dst)
 
     # prepare model
     model = Net()
