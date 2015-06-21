@@ -98,11 +98,10 @@ def load_data(trans, args, input_q, data_q):
             input_data[j] = x.transpose((2, 0, 1))
             label[j] = t
 
-        data_q.put((input_data, label))
+        data_q.put([input_data, label])
 
 
 def train(train_dl, N, model, optimizer, trans, args, input_q, data_q):
-    global index
     pbar = ProgressBar(N)
     perm = np.random.permutation(N)
     sum_loss = 0
@@ -123,7 +122,6 @@ def train(train_dl, N, model, optimizer, trans, args, input_q, data_q):
         optimizer.zero_grads()
         loss, pred = model.forward(input_data, label, train=True)
         loss.backward()
-        optimizer.weight_decay(decay=0.0005)
         optimizer.update()
 
         sum_loss += float(cuda.to_cpu(loss.data)) * batchsize

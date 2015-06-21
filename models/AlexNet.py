@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from chainer import Variable, FunctionSet
+from chainer import Variable, FunctionSet, cuda
 import chainer.functions as F
 import chainer.functions.basic_math as M
 
@@ -24,7 +24,7 @@ class AlexNet(FunctionSet):
             conv5=F.Convolution2D(384, 256, 3, stride=1, pad=1),
             fc6=F.Linear(9216, 4096),
             fc7=F.Linear(4096, 4096),
-            fc8=F.Linear(4096, 28)
+            fc8=F.Linear(4096, 14)
         )
 
     def forward(self, x_data, y_data, train=True):
@@ -32,10 +32,12 @@ class AlexNet(FunctionSet):
         t = Variable(y_data, volatile=not train)
 
         h = F.relu(self.bn1(self.conv1(x)))
+        # h = F.relu(self.conv1(x))
         h = F.max_pooling_2d(h, 3, stride=2)
         h = F.local_response_normalization(h)
 
         h = F.relu(self.bn2(self.conv2(h)))
+        # h = F.relu(self.conv2(h))
         h = F.max_pooling_2d(h, 3, stride=2)
         h = F.local_response_normalization(h)
 
@@ -47,8 +49,7 @@ class AlexNet(FunctionSet):
         h = F.dropout(F.relu(self.fc6(h)), train=train, ratio=0.6)
         h = F.dropout(F.relu(self.fc7(h)), train=train, ratio=0.6)
         h = self.fc8(h)
-        h = F.tanh(h)
 
-        loss = F.mean_squared_error(h, t)
+        loss = F.mean_squared_error(t, h)
 
         return loss, h

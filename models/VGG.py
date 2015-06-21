@@ -35,7 +35,7 @@ class VGG(FunctionSet):
 
             fc14=F.Linear(25088, 4096),
             fc15=F.Linear(4096, 4096),
-            pred=F.Linear(4096, 28)
+            pred=F.Linear(4096, 14)
         )
 
     def forward(self, x_data, y_data, train=True):

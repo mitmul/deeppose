@@ -28,8 +28,8 @@ class Transform(object):
         if hasattr(self, 'lcn'):
             self.contrast()
 
-        # joint pos normalization (-1.0 <= x, y <= 1.0)
-        self._joints = (self._joints - self.size / 2.0) / float(self.size)
+        # joint pos normalization (0.0 <= x, y <= 1.0)
+        self._joints = self._joints.astype(np.float32) / float(self.size)
 
         return self._img, self._joints
 
@@ -91,4 +91,4 @@ class Transform(object):
             self._joints[0:: 2] = self._img.shape[1] - self._joints[0:: 2]
 
     def revert(self, pred):
-        return (pred * self.size) + (self.size / 2)
+        return pred * self.size
