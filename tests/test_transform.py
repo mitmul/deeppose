@@ -31,11 +31,9 @@ def load_data(trans, args, x):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model_file', '-m', type=str)
     parser.add_argument('--data_dir', '-d', type=str, default='data/FLIC-full')
     parser.add_argument('--channel', '-c', type=int, default=3)
-    parser.add_argument('--size', '-s', type=int, default=227)
-    parser.add_argument('--shift', '-f', type=int, default=5)
+    parser.add_argument('--size', '-s', type=int, default=220)
     parser.add_argument('--joint_num', '-j', type=int, default=7)
     args = parser.parse_args()
     print(args)
@@ -45,7 +43,7 @@ if __name__ == '__main__':
                       flip=True,
                       size=args.size,
                       shift=5,
-                      norm=True)
+                      lcn=False)
 
     # test data
     test_fn = '%s/test_joints.csv' % args.data_dir
