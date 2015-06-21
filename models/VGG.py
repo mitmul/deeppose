@@ -71,7 +71,4 @@ class VGG(FunctionSet):
 
         loss = F.mean_squared_error(h, t)
 
-        if train:
-            return loss
-        else:
-            return loss, h
+        return loss, h

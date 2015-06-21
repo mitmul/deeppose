@@ -74,7 +74,7 @@ def get_model_optimizer(result_dir, args):
         model.to_gpu()
 
     # prepare optimizer
-    optimizer = optimizers.MomentumSGD(lr=0.0005, momentum=0.9)
+    optimizer = optimizers.MomentumSGD(lr=0.01, momentum=0.9)
     optimizer.setup(model.collect_parameters())
 
     return model, optimizer
