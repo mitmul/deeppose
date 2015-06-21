@@ -28,8 +28,14 @@ class Transform(object):
         if hasattr(self, 'lcn'):
             self.contrast()
 
-        # joint pos normalization (0.0 <= x, y <= 1.0)
-        self._joints = self._joints.astype(np.float32) / float(self.size)
+        # joint pos centerization
+        h, w, c = self._img.shape
+        center_pt = np.array([w / 2, h / 2])  # x,y order
+        joints = zip(self._joints[0::2], self._joints[1::2])
+        joints = np.array(joints) - center_pt
+        joints[:, 0] /= w
+        joints[:, 1] /= h
+        self._joints = joints
 
         return self._img, self._joints
 
@@ -90,5 +96,12 @@ class Transform(object):
             self._img = np.fliplr(self._img)
             self._joints[0:: 2] = self._img.shape[1] - self._joints[0:: 2]
 
-    def revert(self, pred):
-        return pred * self.size
+    def revert(self, img, pred):
+        h, w, c = img.shape
+        center_pt = np.array([w / 2, h / 2])
+        joints = np.array(zip(pred[0::2], pred[1::2]))  # x,y order
+        joints[:, 0] *= w
+        joints[:, 1] *= h
+        joints += center_pt
+
+        return joints
