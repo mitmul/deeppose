@@ -1,17 +1,21 @@
 deeppose
 ========
+
+# Requirements
+
+- [Chainer](https://github.com/pfnet/chainer) (Neural network framework)
+    - Just do `$ pip install chainer`
+    - and then, if you want to train networks with GPU, `$ pip install chainer-cuda-deps`
+
 # Data preparation
 
     $ bash scripts/downloader.sh
+    $ python scripts/flic_dataset.py
 
 This script downloads FLIC-full dataset (http://vision.grasp.upenn.edu/cgi-bin/index.php?n=VideoLearning.FLIC) and perform cropping regions of human and save poses as numpy files into FLIC-full directory.
 
 # Start training
 
-    $ bash scripts/train.sh ModelName
+    $ python scripts/train.py --model models/AlexNet.py --gpu 0
 
-where the "ModelName" is the directory name in models dir you want to train with architecture described in.
-
-**NOTE**
-
-I set the caffe directory path to `$HOME/Libraries/caffe` in the `train.sh`. If caffe is located in other place, please modify the path setting.
+See the help messages with `--help` option for details.

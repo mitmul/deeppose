@@ -1,39 +1,53 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import sys
 import re
-import numpy as np
-if sys.platform.startswith('linux'):
-    import matplotlib
+import sys
+import matplotlib
+if sys.platform in ['linux', 'linux2']:
     matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import numpy as np
+import argparse
 
 
-def save_loss_curve(fname):
-    loss_iter = []
-    loss = []
-    test_iter = []
-    test = []
-    for line in open(fname):
-        if 'Iteration' in line and 'loss' in line:
-            txt = re.search(ur'Iteration\s([0-9]+)', line)
-            loss_iter.append(int(txt.groups()[0]))
-            txt = re.search(ur'loss\s=\s([0-9\.]+)\n', line)
-            loss.append(float(txt.groups()[0]))
-        if 'Testing net' in line:
-            txt = re.search(ur'Iteration\s([0-9]+)', line)
-            test_iter.append(int(txt.groups()[0]))
-        if 'Test net output' in line and 'loss':
-            txt = re.search(ur'=\s*([0-9\.]+)\s*loss\)', line)
-            if txt:
-                test.append(float(txt.groups()[0]))
+def draw_loss_curve(logfile, outfile):
+    train_loss = []
+    test_loss = []
+    for line in open(logfile):
+        line = line.strip()
+        if not 'epoch:' in line:
+            continue
+        epoch = int(re.search(ur'epoch:([0-9]+)', line).groups()[0])
+        if 'train' in line and 'inf' not in line:
+            tr_l = float(re.search(ur'loss=([0-9\.]+)', line).groups()[0])
+            train_loss.append([epoch, tr_l])
+        if 'test' in line and 'inf' not in line:
+            te_l = float(re.search(ur'loss=([0-9\.]+)', line).groups()[0])
+            test_loss.append([epoch, te_l])
 
-    plt.clf()
-    plt.plot(loss_iter, loss)
-    plt.plot(test_iter, test)
-    plt.savefig('loss_curve.png')
+    train_loss = np.asarray(train_loss)[1:]
+    test_loss = np.asarray(test_loss)[1:]
+
+    if not len(train_loss) > 1:
+        return
+
+    fig, ax1 = plt.subplots()
+    plt.plot(train_loss[:, 0], train_loss[:, 1], label='training loss')
+    plt.plot(test_loss[:, 0], test_loss[:, 1], label='test loss')
+    plt.xlim([2, len(train_loss)])
+    plt.xlabel('epoch')
+    plt.ylabel('loss')
+
+    plt.legend(bbox_to_anchor=(0.0, -0.1), loc=9)
+    plt.savefig(outfile, bbox_inches='tight')
 
 
 if __name__ == '__main__':
-    save_loss_curve('nohup.out')
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--logfile', '-f', type=str)
+    parser.add_argument('--outfile', '-o', type=str)
+    args = parser.parse_args()
+    print(args)
+
+    draw_loss_curve(args.logfile, args.outfile)

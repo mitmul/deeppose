@@ -5,6 +5,9 @@ if [ ! -d data ]; then
     wget http://vision.grasp.upenn.edu/video/FLIC-full.zip
     unzip FLIC-full.zip
     rm -rf FLIC-full.zip
+    cd FLIC-full
+    wget http://cims.nyu.edu/~tompson/data/tr_plus_indices.mat
+    cd ..
     wget http://www.comp.leeds.ac.uk/mat4saj/lspet_dataset.zip
     unzip lspet_dataset.zip
     rm -rf lspet_dataset.zip
@@ -14,6 +17,3 @@ if [ ! -d data ]; then
     mv README.txt lspet_dataset/
     cd ..
 fi
-python scripts/flic_dataset.py
-python scripts/lsp_dataset.py
-python scripts/dataset.py

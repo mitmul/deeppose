@@ -3,9 +3,11 @@
 
 # dirs
 data
+results
 
 # sftp settings
 sftp-config.json
+.remote-sync.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
