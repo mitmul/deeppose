@@ -123,6 +123,7 @@ def train(train_dl, N, model, optimizer, trans, args, input_q, data_q):
         optimizer.zero_grads()
         loss, pred = model.forward(input_data, label, train=True)
         loss.backward()
+        optimizer.weight_decay(decay=0.0005)
         optimizer.update()
 
         sum_loss += float(cuda.to_cpu(loss.data)) * batchsize

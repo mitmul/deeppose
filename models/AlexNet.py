@@ -44,13 +44,11 @@ class AlexNet(FunctionSet):
         h = F.relu(self.conv5(h))
         h = F.max_pooling_2d(h, 3, stride=2)
 
-        h = F.dropout(F.relu(self.fc6(h)), train=train, ratio=0.5)
-        h = F.dropout(F.relu(self.fc7(h)), train=train, ratio=0.5)
+        h = F.dropout(F.relu(self.fc6(h)), train=train, ratio=0.6)
+        h = F.dropout(F.relu(self.fc7(h)), train=train, ratio=0.6)
         h = self.fc8(h)
         h = F.tanh(h)
 
         loss = F.mean_squared_error(h, t)
-
-        print loss.data
 
         return loss, h
