@@ -25,8 +25,11 @@ class Transform(object):
             self.fliplr()
         if hasattr(self, 'size'):
             self.resize()
-        if hasattr(self, 'norm'):
-            self.normalize()
+        if hasattr(self, 'lcn'):
+            self.contrast()
+
+        # joint pos normalization (-1.0 <= x, y <= 1.0)
+        self._joints = (self._joints - self.size / 2.0) / float(self.size)
 
         return self._img, self._joints
 
@@ -71,8 +74,8 @@ class Transform(object):
         self._img = cv.resize(self._img, (self.size, self.size),
                               interpolation=cv.INTER_NEAREST)
 
-    def normalize(self):
-        if self.norm:
+    def contrast(self):
+        if self.lcn:
             if not self._img.dtype == np.float32:
                 self._img = self._img.astype(np.float32)
             # local contrast normalization
@@ -81,9 +84,6 @@ class Transform(object):
                 im = (im - np.mean(im)) / \
                     (np.std(im) + np.finfo(np.float32).eps)
                 self._img[:, :, ch] = im
-
-            # joint pos normalization (-1.0 <= x, y <= 1.0)
-            self._joints = (self._joints - self.size / 2.0) / float(self.size)
 
     def fliplr(self):
         if np.random.randint(2) == 1 and self.flip == True:

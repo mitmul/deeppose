@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from chainer import Variable, FunctionSet, cuda
+from chainer import Variable, FunctionSet
 import chainer.functions as F
 import chainer.functions.basic_math as M
 
@@ -50,5 +50,7 @@ class AlexNet(FunctionSet):
         h = F.tanh(h)
 
         loss = F.mean_squared_error(h, t)
+
+        print loss.data
 
         return loss, h

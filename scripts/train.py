@@ -74,7 +74,7 @@ def get_model_optimizer(result_dir, args):
         model.to_gpu()
 
     # prepare optimizer
-    optimizer = optimizers.MomentumSGD(lr=0.01, momentum=0.9)
+    optimizer = optimizers.MomentumSGD(lr=0.0005, momentum=0.9)
     optimizer.setup(model.collect_parameters())
 
     return model, optimizer
@@ -123,6 +123,7 @@ def train(train_dl, N, model, optimizer, trans, args, input_q, data_q):
         optimizer.zero_grads()
         loss, pred = model.forward(input_data, label, train=True)
         loss.backward()
+        optimizer.weight_decay(decay=0.0005)
         optimizer.update()
 
         sum_loss += float(cuda.to_cpu(loss.data)) * batchsize
@@ -177,7 +178,7 @@ if __name__ == '__main__':
     parser.add_argument('--epoch_offset', '-o', type=int, default=0)
     parser.add_argument('--datadir', '-d', type=str, default='data/FLIC-full')
     parser.add_argument('--channel', '-c', type=int, default=3)
-    parser.add_argument('--size', '-z', type=int, default=224)
+    parser.add_argument('--size', '-z', type=int, default=220)
     parser.add_argument('--crop_pad_inf', '-i', type=float, default=1.5)
     parser.add_argument('--crop_pad_sup', '-u', type=float, default=2.0)
     parser.add_argument('--joint_num', '-j', type=int, default=7)
@@ -198,7 +199,7 @@ if __name__ == '__main__':
                       flip=True,
                       size=args.size,
                       shift=5,
-                      norm=True)
+                      lcn=False)
 
     logging.info(time.strftime('%Y-%m-%d_%H-%M-%S'))
     logging.info('start training...')
