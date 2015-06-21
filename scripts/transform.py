@@ -73,10 +73,14 @@ class Transform(object):
 
     def normalize(self):
         if self.norm:
+            if not self._img.dtype == np.float32:
+                self._img = self._img.astype(np.float32)
             # local contrast normalization
             for ch in range(self._img.shape[2]):
-                self._img[ch] = (self._img[ch] - self._img[ch].mean()) / \
-                    (np.std(self._img[ch]) + np.finfo(np.float32).eps)
+                im = self._img[:, :, ch]
+                im = (im - np.mean(im)) / \
+                    (np.std(im) + np.finfo(np.float32).eps)
+                self._img[:, :, ch] = im
 
             # joint pos normalization (-1.0 <= x, y <= 1.0)
             self._joints = (self._joints - self.size / 2.0) / float(self.size)
@@ -84,36 +88,7 @@ class Transform(object):
     def fliplr(self):
         if np.random.randint(2) == 1 and self.flip == True:
             self._img = np.fliplr(self._img)
-            self._joints[0::2] = self._img.shape[1] - self._joints[0::2]
+            self._joints[0:: 2] = self._img.shape[1] - self._joints[0:: 2]
 
     def revert(self, pred):
         return (pred * self.size) + (self.size / 2)
-
-
-if __name__ == '__main__':
-    import csv
-    line = csv.reader(open('data/panorama/joint_train.csv'))
-    params = line.next()
-    fname = 'data/panorama/images/' + params[1]
-    image = cv.imread(fname)
-    joints = np.asarray([int(p) for p in params[3:]])
-
-    from create_panorama import draw_structure
-
-    trans = Transform(padding=[1.5, 2.0])
-    img, joints = trans.transform(image, joints)
-    draw_structure(img, zip(joints[0::2], joints[1::2]))
-    cv.imwrite('img0.jpg', img)
-    img, joints = trans.transform(image, joints)
-    cv.imwrite('img1.jpg', img)
-
-    print joints
-    import sys
-    sys.exit()
-
-    for i in range(10):
-        img = train_data[i].transpose((1, 2, 0)) * 255
-        img = img.astype(np.uint8)[:, :, ::-1]
-        img = trans.transform(img)
-        cv.imshow('test', img)
-        cv.waitKey(0)

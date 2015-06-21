@@ -90,6 +90,7 @@ def load_data(trans, args, input_q, data_q):
 
 
 def train(train_dl, N, model, optimizer, trans, args, input_q, data_q):
+    global index
     pbar = ProgressBar(N)
     perm = np.random.permutation(N)
     sum_loss = 0

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from chainer import Variable, FunctionSet
+from chainer import Variable, FunctionSet, cuda
 import chainer.functions as F
 import chainer.functions.basic_math as M
 
