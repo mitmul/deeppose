@@ -35,7 +35,7 @@ class Transform(object):
         joints = np.array(joints) - center_pt
         joints[:, 0] /= w
         joints[:, 1] /= h
-        self._joints = joints
+        self._joints = joints.flatten()
 
         return self._img, self._joints
 

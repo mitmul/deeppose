@@ -32,12 +32,10 @@ class AlexNet(FunctionSet):
         t = Variable(y_data, volatile=not train)
 
         h = F.relu(self.bn1(self.conv1(x)))
-        # h = F.relu(self.conv1(x))
         h = F.max_pooling_2d(h, 3, stride=2)
         h = F.local_response_normalization(h)
 
         h = F.relu(self.bn2(self.conv2(h)))
-        # h = F.relu(self.conv2(h))
         h = F.max_pooling_2d(h, 3, stride=2)
         h = F.local_response_normalization(h)
 
