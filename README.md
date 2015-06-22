@@ -16,7 +16,27 @@ This script downloads FLIC-full dataset (http://vision.grasp.upenn.edu/cgi-bin/i
 
 # Start training
 
-    $ python scripts/train.py --model models/AlexNet.py --gpu 0
+## For FLIC Dataset
+
+```
+    nohup python scripts/train.py \
+    --model models/AlexNet.py \
+    --gpu 0 \
+    --epoch 1000 \
+    --batchsize 128 \
+    --prefix AlexNet_LCN_AdaGrad_lr-0.0005 \
+    --snapshot 10 \
+    --datadir data/FLIC-full \
+    --channel 3 \
+    --flip True \
+    --size 220 \
+    --crop_pad_inf 1.5 \
+    --crop_pad_sup 2.0 \
+    --shift 5 \
+    --lcn True \
+    --joint_num 7 \
+    > AlexNet_LCN_AdaGrad_lr-0.0005.log 2>&1 &
+```
 
 See the help messages with `--help` option for details.
 
