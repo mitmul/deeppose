@@ -248,7 +248,7 @@ if __name__ == '__main__':
                         trans, args, input_q, data_q)
         msg = get_log_msg('test', epoch, sum_loss, N_test, args, st)
         logging.info(msg)
-        print(msg)
+        print('\n%s' % msg)
 
         if epoch == 1 or epoch % args.snapshot == 0:
             model_fn = '%s/%s_epoch_%d.chainermodel' % (

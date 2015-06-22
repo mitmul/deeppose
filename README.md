@@ -6,6 +6,8 @@ deeppose
 - [Chainer](https://github.com/pfnet/chainer) (Neural network framework)
     - Just do `$ pip install chainer`
     - and then, if you want to train networks with GPU, `$ pip install chainer-cuda-deps`
+- progressbar2
+    - `$ pip install progressbar2`
 
 # Data preparation
 
