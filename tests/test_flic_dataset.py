@@ -18,26 +18,28 @@ def draw_limb(img, joints, i, j, color):
     return img
 
 
-def draw_joints(img, joints):
+def draw_joints(img, joints, line=True, text_scale=1.0):
     h, w, c = img.shape
 
-    img = draw_limb(img, joints, 0, 1, (0, 255, 0))  # left hand to left elbow
-    img = draw_limb(img, joints, 1, 2, (0, 255, 0))
-    img = draw_limb(img, joints, 4, 5, (0, 255, 0))
-    img = draw_limb(img, joints, 5, 6, (0, 255, 0))
-    img = draw_limb(img, joints, 2, 4, (255, 0, 0))
-    neck = tuple((np.array(joints[2]) + np.array(joints[4])) / 2)
-    joints.append(neck)
-    img = draw_limb(img, joints, 3, 7, (255, 0, 0))
-    joints.pop()
+    if line:
+        # left hand to left elbow
+        img = draw_limb(img, joints, 0, 1, (0, 255, 0))
+        img = draw_limb(img, joints, 1, 2, (0, 255, 0))
+        img = draw_limb(img, joints, 4, 5, (0, 255, 0))
+        img = draw_limb(img, joints, 5, 6, (0, 255, 0))
+        img = draw_limb(img, joints, 2, 4, (255, 0, 0))
+        neck = tuple((np.array(joints[2]) + np.array(joints[4])) / 2)
+        joints.append(neck)
+        img = draw_limb(img, joints, 3, 7, (255, 0, 0))
+        joints.pop()
 
     # all joint points
     for j, joint in enumerate(joints):
         cv.circle(img, joint, 5, (0, 0, 255), -1)
         cv.circle(img, joint, 3, (0, 255, 0), -1)
-        cv.putText(img, '%d' % j, joint, cv.FONT_HERSHEY_SIMPLEX, 1.0,
+        cv.putText(img, '%d' % j, joint, cv.FONT_HERSHEY_SIMPLEX, text_scale,
                    (0, 0, 0), thickness=3, lineType=cv.CV_AA)
-        cv.putText(img, '%d' % j, joint, cv.FONT_HERSHEY_SIMPLEX, 1.0,
+        cv.putText(img, '%d' % j, joint, cv.FONT_HERSHEY_SIMPLEX, text_scale,
                    (255, 255, 255), thickness=1, lineType=cv.CV_AA)
 
     return img

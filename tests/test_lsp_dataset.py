@@ -10,10 +10,11 @@ import glob
 
 
 def draw_limb(img, joints, i, j, color):
-    cv.line(img, joints[i], joints[j], (255, 255, 255),
-            thickness=2, lineType=cv.CV_AA)
-    cv.line(img, joints[i], joints[j], color,
-            thickness=1, lineType=cv.CV_AA)
+    if joints[i][0] > 0 and joints[j][0] > 0 and joints[i][1] > 0 and joints[j][1] > 0:
+        cv.line(img, joints[i], joints[j], (255, 255, 255),
+                thickness=2, lineType=cv.CV_AA)
+        cv.line(img, joints[i], joints[j], color,
+                thickness=1, lineType=cv.CV_AA)
 
     return img
 
@@ -37,12 +38,13 @@ def draw_joints(img, joints):
 
     # all joint points
     for j, joint in enumerate(joints):
-        cv.circle(img, joint, 5, (0, 0, 255), -1)
-        cv.circle(img, joint, 3, (0, 255, 0), -1)
-        cv.putText(img, '%d' % j, joint, cv.FONT_HERSHEY_SIMPLEX, 0.3,
-                   (0, 0, 0), thickness=3, lineType=cv.CV_AA)
-        cv.putText(img, '%d' % j, joint, cv.FONT_HERSHEY_SIMPLEX, 0.3,
-                   (255, 255, 255), thickness=1, lineType=cv.CV_AA)
+        if joint[0] > 0 and joint[1] > 0:
+            cv.circle(img, joint, 5, (0, 0, 255), -1)
+            cv.circle(img, joint, 3, (0, 255, 0), -1)
+            cv.putText(img, '%d' % j, joint, cv.FONT_HERSHEY_SIMPLEX, 0.3,
+                       (0, 0, 0), thickness=3, lineType=cv.CV_AA)
+            cv.putText(img, '%d' % j, joint, cv.FONT_HERSHEY_SIMPLEX, 0.3,
+                       (255, 255, 255), thickness=1, lineType=cv.CV_AA)
 
     return img
 
@@ -63,6 +65,3 @@ if __name__ == '__main__':
         cv.imwrite('%s/%s' % (out_dir, basename(img_fn)), draw)
 
         print img_fn
-
-        if i > 10:
-            break

@@ -17,6 +17,11 @@ deeppose
 
 This script downloads FLIC-full dataset (http://vision.grasp.upenn.edu/cgi-bin/index.php?n=VideoLearning.FLIC) and perform cropping regions of human and save poses as numpy files into FLIC-full directory.
 
+## MPII Dataset
+
+- train: 18079, test: 6908
+
+
 # Start training
 
 ## For FLIC Dataset
@@ -67,4 +72,4 @@ This script downloads FLIC-full dataset (http://vision.grasp.upenn.edu/cgi-bin/i
 
 See the help messages with `--help` option for details.
 
-- 1 epoch takes 2.75 min on K80.
+# Visualize Prediction

@@ -23,12 +23,12 @@ if __name__ == '__main__':
     jnt_fn = '%s/joints.mat' % args.datadir
     joints = loadmat(jnt_fn)
     joints = joints['joints'].swapaxes(0, 2).swapaxes(1, 2)
-    joints = np.abs(joints[:, :, :2])
+    joints = joints[:, :, :2]
 
-    perm = np.random.permutation(int(len(joints) * 0.1))
+    N_test = int(len(joints) * 0.1)
+    perm = np.random.permutation(int(len(joints)))[:N_test].tolist()
     print(perm)
 
-    fp = open('%s/joints.csv' % args.datadir, 'w')
     fp_train = open('%s/train_joints.csv' % args.datadir, 'w')
     fp_test = open('%s/test_joints.csv' % args.datadir, 'w')
     for img_fn in sorted(glob.glob('%s/images/*.jpg' % args.datadir)):
@@ -43,6 +43,5 @@ if __name__ == '__main__':
             print(out_str, file=fp_test)
         else:
             print(out_str, file=fp_train)
-    fp.close()
     fp_train.close()
     fp_test.close()

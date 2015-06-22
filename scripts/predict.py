@@ -68,6 +68,10 @@ if __name__ == '__main__':
                         help='the index of image file name in a csv line')
     parser.add_argument('--joint_index', type=int, default=1,
                         help='the start index of joint values in a csv line')
+    parser.add_argument('--draw_limb', type=bool, default=True,
+                        help='whether draw limb line to visualize')
+    parser.add_argument('--text_scale', type=float, default=1.0,
+                        help='text scale when drawing indices of joints')
     args = parser.parse_args()
     print(args)
 
@@ -102,7 +106,19 @@ if __name__ == '__main__':
         img_pred, pred = trans.revert(img, pred)
         img_pred = np.array(img_pred.copy())
         pred = [tuple(p) for p in pred]
-        img = flic.draw_joints(img_pred, pred)
+        # img = flic.draw_joints(img_pred, pred, args.draw_limb, args.text_scale)
+
+        joints = pred
+        img = img_pred
+        text_scale = args.text_scale
+        # all joint points
+        for j, joint in enumerate(joints):
+            cv.circle(img, joint, 5, (0, 0, 255), -1)
+            cv.circle(img, joint, 3, (0, 255, 0), -1)
+            cv.putText(img, '%d' % j, joint, cv.FONT_HERSHEY_SIMPLEX, text_scale,
+                       (0, 0, 0), thickness=3, lineType=cv.CV_AA)
+            cv.putText(img, '%d' % j, joint, cv.FONT_HERSHEY_SIMPLEX, text_scale,
+                       (255, 255, 255), thickness=1, lineType=cv.CV_AA)
 
         print(img_fn)
         # img_label, label = trans.revert(img, label)
