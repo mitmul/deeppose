@@ -39,7 +39,7 @@ def draw_loss_curve(logfile, outfile):
     plt.xlabel('epoch')
     plt.ylabel('loss')
 
-    plt.legend(bbox_to_anchor=(0.0, -0.1), loc=9)
+    plt.legend(loc='upper right')
     plt.savefig(outfile, bbox_inches='tight')
 
 

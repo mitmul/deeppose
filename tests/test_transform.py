@@ -33,17 +33,28 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_dir', '-d', type=str, default='data/FLIC-full')
     parser.add_argument('--channel', '-c', type=int, default=3)
-    parser.add_argument('--size', '-s', type=int, default=220)
-    parser.add_argument('--joint_num', '-j', type=int, default=7)
+    parser.add_argument('--flip', type=bool, default=True,
+                        help='flip left and right for data augmentation')
+    parser.add_argument('--size', type=int, default=220,
+                        help='resizing')
+    parser.add_argument('--crop_pad_inf', type=float, default=1.5,
+                        help='random number infimum for padding size when cropping')
+    parser.add_argument('--crop_pad_sup', type=float, default=2.0,
+                        help='random number supremum for padding size when cropping')
+    parser.add_argument('--shift', type=int, default=5,
+                        help='slide an image when cropping')
+    parser.add_argument('--lcn', type=bool, default=True,
+                        help='local contrast normalization for data augmentation')
+    parser.add_argument('--joint_num', type=int, default=7)
     args = parser.parse_args()
     print(args)
 
     # augmentation setting
-    trans = Transform(padding=[1.5, 2.0],
-                      flip=True,
+    trans = Transform(padding=[args.crop_pad_inf, args.crop_pad_sup],
+                      flip=args.flip,
                       size=args.size,
-                      shift=5,
-                      lcn=False)
+                      shift=args.shift,
+                      lcn=args.lcn)
 
     # test data
     test_fn = '%s/test_joints.csv' % args.data_dir
@@ -54,12 +65,11 @@ if __name__ == '__main__':
         os.makedirs(result_dir)
     for i, line in enumerate(test_dl):
         orig, input_data, label = load_data(trans, args, line)
-        input_data = input_data.transpose((0, 2, 3, 1))[0]
+        input_data = input_data.transpose((0, 2, 3, 1))[0].astype(np.float32)
+        label = label.astype(np.float32).flatten()
         cv.imwrite('%s/%d_orig.jpg' % (result_dir, i), orig)
-        cv.imwrite('%s/%d_trans.jpg' % (result_dir, i), input_data)
-
-        label = np.array(trans.revert(label), dtype=np.int32)[0]
-        label = zip(label[0::2], label[1::2])
+        img, label = trans.revert(input_data, label)
+        label = [tuple(l) for l in label]
         pose = draw_joints(input_data.copy(), label)
         pose = np.array(pose.copy())
         cv.imwrite('%s/%d_pose.jpg' % (result_dir, i), pose)

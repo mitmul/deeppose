@@ -166,20 +166,30 @@ def get_log_msg(stage, epoch, sum_loss, N, args, st):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model', '-m', type=str, default='cifar10_model')
-    parser.add_argument('--gpu', '-g', type=int, default=-1)
-    parser.add_argument('--epoch', '-e', type=int, default=20)
-    parser.add_argument('--batchsize', '-b', type=int, default=32)
-    parser.add_argument('--prefix', '-p', type=str)
-    parser.add_argument('--snapshot', '-s', type=int, default=5)
-    parser.add_argument('--restart_from', '-r', type=str)
-    parser.add_argument('--epoch_offset', '-o', type=int, default=0)
-    parser.add_argument('--datadir', '-d', type=str, default='data/FLIC-full')
-    parser.add_argument('--channel', '-c', type=int, default=3)
-    parser.add_argument('--size', '-z', type=int, default=220)
-    parser.add_argument('--crop_pad_inf', '-i', type=float, default=1.5)
-    parser.add_argument('--crop_pad_sup', '-u', type=float, default=2.0)
-    parser.add_argument('--joint_num', '-j', type=int, default=7)
+    parser.add_argument('--model', type=str, default='models/AlexNet.py',
+                        help='model definition file in models dir')
+    parser.add_argument('--gpu', type=int, default=-1)
+    parser.add_argument('--epoch', type=int, default=50)
+    parser.add_argument('--batchsize', type=int, default=32)
+    parser.add_argument('--prefix', type=str, default='FunctionSet')
+    parser.add_argument('--snapshot', type=int, default=5)
+    parser.add_argument('--restart_from', type=str, default=None)
+    parser.add_argument('--epoch_offset', type=int, default=0)
+    parser.add_argument('--datadir', type=str, default='data/FLIC-full')
+    parser.add_argument('--channel', type=int, default=3)
+    parser.add_argument('--flip', type=bool, default=True,
+                        help='flip left and right for data augmentation')
+    parser.add_argument('--size', type=int, default=220,
+                        help='resizing')
+    parser.add_argument('--crop_pad_inf', type=float, default=1.5,
+                        help='random number infimum for padding size when cropping')
+    parser.add_argument('--crop_pad_sup', type=float, default=2.0,
+                        help='random number supremum for padding size when cropping')
+    parser.add_argument('--shift', type=int, default=5,
+                        help='slide an image when cropping')
+    parser.add_argument('--lcn', type=bool, default=True,
+                        help='local contrast normalization for data augmentation')
+    parser.add_argument('--joint_num', type=int, default=7)
     args = parser.parse_args()
 
     # create result dir
@@ -194,10 +204,10 @@ if __name__ == '__main__':
 
     # augmentation setting
     trans = Transform(padding=[args.crop_pad_inf, args.crop_pad_sup],
-                      flip=True,
+                      flip=args.flip,
                       size=args.size,
-                      shift=5,
-                      lcn=False)
+                      shift=args.shift,
+                      lcn=args.lcn)
 
     logging.info(time.strftime('%Y-%m-%d_%H-%M-%S'))
     logging.info('start training...')
@@ -219,7 +229,7 @@ if __name__ == '__main__':
                          trans, args, input_q, data_q)
         msg = get_log_msg('training', epoch, sum_loss, N, args, st)
         logging.info(msg)
-        print(msg)
+        print('\n%s' % msg)
 
         # quit data loading thread
         input_q.put(None)

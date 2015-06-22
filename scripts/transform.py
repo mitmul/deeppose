@@ -6,6 +6,7 @@ import numpy as np
 from scipy.misc import imrotate
 from scipy.ndimage.interpolation import shift
 from sklearn.preprocessing import scale
+from itertools import chain
 
 
 class Transform(object):
@@ -19,7 +20,7 @@ class Transform(object):
         self.orig = self._img.copy()
         self._joints = np.asarray([int(float(p)) for p in datum[1:]])
 
-        if hasattr(self, 'padding'):
+        if hasattr(self, 'padding') and hasattr(self, 'shift'):
             self.crop()
         if hasattr(self, 'flip'):
             self.fliplr()
@@ -30,9 +31,9 @@ class Transform(object):
 
         # joint pos centerization
         h, w, c = self._img.shape
-        center_pt = np.array([w / 2, h / 2])  # x,y order
+        center_pt = np.array([w / 2, h / 2], dtype=np.float32)  # x,y order
         joints = zip(self._joints[0::2], self._joints[1::2])
-        joints = np.array(joints) - center_pt
+        joints = np.array(joints, dtype=np.float32) - center_pt
         joints[:, 0] /= w
         joints[:, 1] /= h
         self._joints = joints.flatten()
@@ -55,9 +56,8 @@ class Transform(object):
         h *= pad_h_r
 
         # shifting
-        if hasattr(self, 'shift'):
-            x += np.random.rand() * self.shift * 2 - self.shift
-            y += np.random.rand() * self.shift * 2 - self.shift
+        x += np.random.rand() * self.shift * 2 - self.shift
+        y += np.random.rand() * self.shift * 2 - self.shift
 
         # clipping
         x, y, w, h = [int(z) for z in [x, y, w, h]]
@@ -94,7 +94,17 @@ class Transform(object):
     def fliplr(self):
         if np.random.randint(2) == 1 and self.flip == True:
             self._img = np.fliplr(self._img)
-            self._joints[0:: 2] = self._img.shape[1] - self._joints[0:: 2]
+            self._joints[0::2] = self._img.shape[1] - self._joints[0:: 2]
+            joints = zip(self._joints[0::2], self._joints[1::2])
+
+            # shoulder
+            joints[2], joints[4] = joints[4], joints[2]
+            # elbow
+            joints[1], joints[5] = joints[5], joints[1]
+            # wrist
+            joints[0], joints[6] = joints[6], joints[0]
+
+            self._joints = np.array(joints).flatten()
 
     def revert(self, img, pred):
         h, w, c = img.shape
@@ -103,5 +113,12 @@ class Transform(object):
         joints[:, 0] *= w
         joints[:, 1] *= h
         joints += center_pt
+        joints = joints.astype(np.int32)
 
-        return joints
+        if hasattr(self, 'lcn') and self.lcn:
+            img -= img.min()
+            img /= img.max()
+            img *= 255
+            img = img.astype(np.uint8)
+
+        return img, joints

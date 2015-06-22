@@ -46,20 +46,25 @@ if __name__ == '__main__':
     parser.add_argument('--parameter', '-p', type=str)
     parser.add_argument('--model', '-m', type=str)
     parser.add_argument('--data_dir', '-d', type=str, default='data/FLIC-full')
-    parser.add_argument('--crop_pad_inf', '-i', type=float, default=1.5)
-    parser.add_argument('--crop_pad_sup', '-u', type=float, default=2.0)
-    parser.add_argument('--channel', '-c', type=int, default=3)
-    parser.add_argument('--size', '-s', type=int, default=220)
-    parser.add_argument('--joint_num', '-j', type=int, default=7)
+    parser.add_argument('--channel', type=int, default=3)
+    parser.add_argument('--size', type=int, default=220,
+                        help='resizing')
+    parser.add_argument('--crop_pad_inf', type=float, default=1.5,
+                        help='random number infimum for padding size when cropping')
+    parser.add_argument('--crop_pad_sup', type=float, default=2.0,
+                        help='random number supremum for padding size when cropping')
+    parser.add_argument('--shift', type=int, default=0,
+                        help='slide an image when cropping')
+    parser.add_argument('--lcn', type=bool, default=False,
+                        help='local contrast normalization for data augmentation')
+    parser.add_argument('--joint_num', type=int, default=7)
     args = parser.parse_args()
     print(args)
 
     # augmentation setting
     trans = Transform(padding=[args.crop_pad_inf, args.crop_pad_sup],
-                      flip=False,
                       size=args.size,
-                      shift=0,
-                      lcn=False)
+                      lcn=args.lcn)
 
     # test data
     test_fn = '%s/test_joints.csv' % args.data_dir
