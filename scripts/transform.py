@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import os
 import cv2 as cv
 import numpy as np
 from scipy.misc import imrotate
@@ -17,6 +18,8 @@ class Transform(object):
     def transform(self, datum, datadir, train=True,
                   fname_index=0, joint_index=1):
         img_fn = '%s/images/%s' % (datadir, datum[fname_index])
+        if not os.path.exists(img_fn):
+            raise Exception('%s is not exist' % img_fn)
         self._img = cv.imread(img_fn)
         self.orig = self._img.copy()
         self._joints = np.asarray([int(float(p)) for p in datum[joint_index:]])

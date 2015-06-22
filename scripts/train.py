@@ -202,6 +202,7 @@ if __name__ == '__main__':
     # create result dir
     log_fn, result_dir = create_result_dir(args)
 
+    # create model and optimizer
     model, optimizer = get_model_optimizer(result_dir, args)
     train_dl, test_dl = load_dataset(args)
     N = len(train_dl)
