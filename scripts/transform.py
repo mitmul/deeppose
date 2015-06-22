@@ -14,11 +14,12 @@ class Transform(object):
     def __init__(self, **params):
         [setattr(self, key, value) for key, value in params.iteritems()]
 
-    def transform(self, datum, datadir, train=True):
-        img_fn = '%s/images/%s' % (datadir, datum[0])
+    def transform(self, datum, datadir, train=True,
+                  fname_index=0, joint_index=1):
+        img_fn = '%s/images/%s' % (datadir, datum[fname_index])
         self._img = cv.imread(img_fn)
         self.orig = self._img.copy()
-        self._joints = np.asarray([int(float(p)) for p in datum[1:]])
+        self._joints = np.asarray([int(float(p)) for p in datum[joint_index:]])
 
         if hasattr(self, 'padding') and hasattr(self, 'shift'):
             self.crop()

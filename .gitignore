@@ -4,6 +4,7 @@
 # dirs
 data
 results
+ompose
 
 # sftp settings
 sftp-config.json

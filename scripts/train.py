@@ -94,7 +94,8 @@ def load_data(trans, args, input_q, data_q):
         input_data = np.zeros((args.batchsize, c, s, s))
         label = np.zeros((args.batchsize, d))
         for j, x in enumerate(x_batch):
-            x, t = trans.transform(x.split(','), args.datadir)
+            x, t = trans.transform(x.split(','), args.datadir, True,
+                                   args.fname_index, args.joint_index)
             input_data[j] = x.transpose((2, 0, 1))
             label[j] = t
 
@@ -173,8 +174,6 @@ if __name__ == '__main__':
     parser.add_argument('--batchsize', type=int, default=32)
     parser.add_argument('--prefix', type=str, default='FunctionSet')
     parser.add_argument('--snapshot', type=int, default=5)
-    parser.add_argument('--restart_from', type=str, default=None)
-    parser.add_argument('--epoch_offset', type=int, default=0)
     parser.add_argument('--datadir', type=str, default='data/FLIC-full')
     parser.add_argument('--channel', type=int, default=3)
     parser.add_argument('--flip', type=bool, default=True,
@@ -190,6 +189,14 @@ if __name__ == '__main__':
     parser.add_argument('--lcn', type=bool, default=True,
                         help='local contrast normalization for data augmentation')
     parser.add_argument('--joint_num', type=int, default=7)
+    parser.add_argument('--fname_index', type=int, default=0,
+                        help='the index of image file name in a csv line')
+    parser.add_argument('--joint_index', type=int, default=1,
+                        help='the start index of joint values in a csv line')
+    parser.add_argument('--restart_from', type=str, default=None,
+                        help='*.chainermodel file path to restart from')
+    parser.add_argument('--epoch_offset', type=int, default=0,
+                        help='set greater than 0 if you restart from a chainermodel pickle')
     args = parser.parse_args()
 
     # create result dir

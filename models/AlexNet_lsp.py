@@ -6,7 +6,7 @@ import chainer.functions as F
 import chainer.functions.basic_math as M
 
 
-class AlexNet(FunctionSet):
+class AlexNet_lsp(FunctionSet):
 
     """
     VGGnet with Batch Normalization and Parameterized ReLU
@@ -14,7 +14,7 @@ class AlexNet(FunctionSet):
     """
 
     def __init__(self):
-        super(AlexNet, self).__init__(
+        super(AlexNet_lsp, self).__init__(
             conv1=F.Convolution2D(3, 96, 11, stride=4, pad=1),
             conv2=F.Convolution2D(96, 256, 5, stride=1, pad=2),
             conv3=F.Convolution2D(256, 384, 3, stride=1, pad=1),
@@ -22,7 +22,7 @@ class AlexNet(FunctionSet):
             conv5=F.Convolution2D(384, 256, 3, stride=1, pad=1),
             fc6=F.Linear(9216, 4096),
             fc7=F.Linear(4096, 4096),
-            fc8=F.Linear(4096, 14)
+            fc8=F.Linear(4096, 28)
         )
 
     def forward(self, x_data, y_data, train=True):
