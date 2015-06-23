@@ -6,7 +6,7 @@ import chainer.functions as F
 import chainer.functions.basic_math as M
 
 
-class AlexNetBN_PReLU(FunctionSet):
+class AlexNet_flic_BN_PReLU(FunctionSet):
 
     """
     VGGnet with Batch Normalization and Parameterized ReLU
@@ -14,7 +14,7 @@ class AlexNetBN_PReLU(FunctionSet):
     """
 
     def __init__(self):
-        super(AlexNetBN_PReLU, self).__init__(
+        super(AlexNet_flic_BN_PReLU, self).__init__(
             conv1=F.Convolution2D(3, 96, 11, stride=4, pad=1),
             bn1=F.BatchNormalization(96),
             prelu1=F.PReLU(),
