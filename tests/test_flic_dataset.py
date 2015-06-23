@@ -18,7 +18,7 @@ def draw_limb(img, joints, i, j, color):
     return img
 
 
-def draw_joints(img, joints, line=True, text_scale=1.0):
+def draw_joints(img, joints, line=True, text_scale=0.5):
     h, w, c = img.shape
 
     if line:

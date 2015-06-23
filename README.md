@@ -4,8 +4,11 @@ deeppose
 # Requirements
 
 - [Chainer](https://github.com/pfnet/chainer) (Neural network framework)
-    - Just do `$ pip install chainer`
-    - and then, if you want to train networks with GPU, `$ pip install chainer-cuda-deps`
+    - I'm using master version on GitHub, so
+        - `$ git clone https://github.com/pfnet/chainer.git`
+        - `$ cd chainer; python setup.py install`
+    - and then, if you want to train networks with GPU,
+        - `$ pip install chainer-cuda-deps`
 - progressbar2
     - `$ pip install progressbar2`
     - NOTE: it's not `progressbar`!
@@ -63,7 +66,7 @@ This script downloads FLIC-full dataset (http://vision.grasp.upenn.edu/cgi-bin/i
     --datadir data/lspet_dataset \
     --channel 3 \
     --flip True \
-    --size 220 \
+    --size 100 \
     --crop_pad_inf 1.5 \
     --crop_pad_sup 2.0 \
     --shift 5 \
@@ -76,4 +79,21 @@ This script downloads FLIC-full dataset (http://vision.grasp.upenn.edu/cgi-bin/i
 
 See the help messages with `--help` option for details.
 
+# Visualize Filters of 1st conv layer
+
+- Go to result dir of a model
+-  `python ../../scripts/draw_filters.py`
+
 # Visualize Prediction
+
+## Example
+
+```
+    python scripts/predict_flic.py \
+    --model results/AlexNet_2015-06-22_13-00-34_143494563481/AlexNet.py \
+    --param results/AlexNet_2015-06-22_13-00-34_143494563481/AlexNetBN_LCN_AdaGrad_lr-0.0005_epoch_400.chainermodel \
+    --gpu 8 \
+    --datadir data/FLIC-full
+```
+
+run the above command from deeppose's root dir.

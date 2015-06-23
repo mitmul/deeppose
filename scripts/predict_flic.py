@@ -4,6 +4,8 @@
 from __future__ import print_function
 import sys
 sys.path.append('tests')
+import glob
+import re
 import os
 import numpy as np
 from chainer import cuda
@@ -12,7 +14,7 @@ import argparse
 from transform import Transform
 import cPickle as pickle
 import cv2 as cv
-import test_flic_dataset as flic
+from test_flic_dataset import draw_joints
 
 
 def load_model(args):
@@ -40,6 +42,25 @@ def load_data(trans, args, x):
     label[0] = t
 
     return input_data, label
+
+
+def tile(perm, test_dir, result_dir, epoch, suffix, N=25):
+    fnames = np.array(glob.glob('%s/*_%s.jpg' % (out_dir, suffix)))
+    tile_fnames = fnames[perm[:N]]
+
+    h, w, c, pad = 220, 220, 3, 2
+    side = int(np.ceil(np.sqrt(len(tile_fnames))))
+    canvas = np.ones((side * w + pad * (side + 1),
+                      side * h + pad * (side + 1), 3))
+    canvas[:, :, 1] *= 255
+
+    for i, fname in enumerate(tile_fnames):
+        img = cv.imread(fname)
+        x = w * (i % side) + pad * (i % side) + pad
+        y = h * (i / side) + pad * (i / side) + pad
+        canvas[y:y + h, x:x + w, :] = img
+
+    cv.imwrite('%s/tiled_%s_%d.jpg' % (result_dir, suffix, epoch), canvas)
 
 
 if __name__ == '__main__':
@@ -73,7 +94,6 @@ if __name__ == '__main__':
     parser.add_argument('--text_scale', type=float, default=1.0,
                         help='text scale when drawing indices of joints')
     args = parser.parse_args()
-    print(args)
 
     if args.gpu >= 0:
         cuda.init()
@@ -91,38 +111,49 @@ if __name__ == '__main__':
 
     # load model
     model = load_model(args)
-    result_dir = os.path.dirname(args.param) + '/test'
-    if not os.path.exists(result_dir):
-        os.makedirs(result_dir)
-    for line in test_dl:
+
+    # create output dir
+    epoch = int(re.search(ur'epoch_([0-9]+)', args.param).groups()[0])
+    result_dir = os.path.dirname(args.param)
+    out_dir = '%s/test_%d' % (result_dir, epoch)
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+
+    for i, line in enumerate(test_dl):
+        # data loading
         img_fn = line.split(',')[args.fname_index]
         input_data, label = load_data(trans, args, line)
-        loss, pred = model.forward(input_data, label)
 
+        # prediction
+        loss, pred = model.forward(input_data, label)
         img = input_data[0].transpose((1, 2, 0))
         pred = cuda.to_cpu(pred.data)[0]
+        img_pred, pred = trans.revert(img, pred, np.int)
+
+        # turn label data into image coordinates
         label = label[0]
+        img_label, label = trans.revert(img, label, np.int)
 
-        img_pred, pred = trans.revert(img, pred)
+        # calc mean_error
+        mean_error = np.linalg.norm(pred - label) / len(pred)
+
         img_pred = np.array(img_pred.copy())
-        pred = [tuple(p) for p in pred]
-        # img = flic.draw_joints(img_pred, pred, args.draw_limb, args.text_scale)
+        img_label = np.array(img_label.copy())
 
-        joints = pred
-        img = img_pred
-        text_scale = args.text_scale
-        # all joint points
-        for j, joint in enumerate(joints):
-            cv.circle(img, joint, 5, (0, 0, 255), -1)
-            cv.circle(img, joint, 3, (0, 255, 0), -1)
-            cv.putText(img, '%d' % j, joint, cv.FONT_HERSHEY_SIMPLEX, text_scale,
-                       (0, 0, 0), thickness=3, lineType=cv.CV_AA)
-            cv.putText(img, '%d' % j, joint, cv.FONT_HERSHEY_SIMPLEX, text_scale,
-                       (255, 255, 255), thickness=1, lineType=cv.CV_AA)
+        pred = [tuple(p) for p in pred]
+        label = [tuple(p) for p in label]
+
+        # all limbs
+        draw_joints(img_label, label, args.draw_limb, args.text_scale)
+        draw_joints(img_pred, pred, args.draw_limb, args.text_scale)
 
         print(img_fn)
-        # img_label, label = trans.revert(img, label)
-        # img_label = draw_structure(img_label, pred)
 
-        cv.imwrite('%s/%s' % (result_dir, img_fn), img)
-        # cv.imwrite('%s/%s' % (result_dir, img_fn), img)
+        fn, ext = os.path.splitext(img_fn)
+        cv.imwrite('%s/%s_pred%s' % (out_dir, fn, ext), img_pred)
+        cv.imwrite('%s/%s_label%s' % (out_dir, fn, ext), img_label)
+
+    # save tiled image of randomly chosen results and labels
+    perm = np.random.permutation(i - 1)
+    tile(perm, out_dir, result_dir, epoch, 'pred', N=25)
+    tile(perm, out_dir, result_dir, epoch, 'label', N=25)
