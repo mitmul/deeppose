@@ -181,6 +181,8 @@ if __name__ == '__main__':
                         help='how many images will be tiled')
     parser.add_argument('--resize', type=int, default=-1,
                         help='resize the results of tiling')
+    parser.add_argument('--seed', type=int, default=9,
+                        help='random seed to select images to be tiled')
     parser.add_argument('--channel', type=int, default=3)
     parser.add_argument('--flip', type=bool, default=True,
                         help='flip left and right for data augmentation')
@@ -208,4 +210,5 @@ if __name__ == '__main__':
     if args.mode == 'test':
         test(args)
     elif args.mode == 'tile':
+        np.random.seed(args.seed)
         tile(args)

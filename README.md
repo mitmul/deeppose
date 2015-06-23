@@ -88,13 +88,28 @@ See the help messages with `--help` option for details.
 
 ## Example
 
+### Prediction and visualize them and calc mean errors
+
 ```
     python scripts/predict_flic.py \
     --model results/AlexNet_2015/AlexNet.py \
     --param results/AlexNet_2015/AlexNet_epoch_400.chainermodel \
     --datadir data/FLIC-full
     --gpu 0 \
-    --batchsize 128
+    --batchsize 128 \
+    --mode test
 ```
 
-run the above command from this root dir.
+### Tile some randomly selected result images
+
+```
+    python scripts/predict_flic.py \
+    --model results/AlexNet_2015/AlexNet.py \
+    --param results/AlexNet_2015/AlexNet_epoch_450.chainermodel \
+    --mode tile \
+    --n_imgs 25
+```
+
+
+
+run these above command from this root dir.
