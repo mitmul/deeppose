@@ -116,11 +116,11 @@ def test(args):
             img_fn = line.split(',')[args.fname_index]
             img = input_data[n].transpose((1, 2, 0))
             pred = preds[n]
-            img_pred, pred = trans.revert(img, pred, np.int)
+            img_pred, pred = trans.revert(img, pred)
 
             # turn label data into image coordinates
             label = labels[n]
-            img_label, label = trans.revert(img, label, np.int)
+            img_label, label = trans.revert(img, label)
 
             # calc mean_error
             error = np.linalg.norm(pred - label) / len(pred)
