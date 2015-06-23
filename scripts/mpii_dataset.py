@@ -1,101 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import json
 import os
 import shutil
 import sys
-import json
-import random
 import cv2 as cv
 import numpy as np
 from scipy.io import loadmat
-import argparse
-
-random.seed(1701)
-np.random.seed(1701)
-
-data_dir = 'data/mpii'
-img_dir = 'data/mpii/images'
-json_fn = 'data/mpii/joints.json'
-
-joint_name = {
-    0: 'right_ankle',
-    1: 'right_knee',
-    2: 'right_hip',
-    3: 'left_hip',
-    4: 'left_knee',
-    5: 'left_ankle',
-    6: 'pelvis',
-    7: 'clavicle',
-    8: 'neck',
-    9: 'head_top',
-    10: 'right_wrist',
-    11: 'right_elbow',
-    12: 'right_shoulder',
-    13: 'left_shoulder',
-    14: 'left_elbow',
-    15: 'left_wrist'
-}
-
-using_joints = [2, 3, 8, 9, 10, 11, 12, 13, 14, 15]
-
-
-def draw_joints(img, points, head_rect=None):
-    points = dict([(k, (int(points[k][0]), int(points[k][1])))
-                   for k in points.keys()])
-
-    # lower body
-    if 0 in points and 1 in points:
-        cv.line(img, points[0], points[1], (255, 100, 100), 3)
-    if 1 in points and 2 in points:
-        cv.line(img, points[1], points[2], (255, 100, 100), 3)
-    if 3 in points and 4 in points:
-        cv.line(img, points[3], points[4], (255, 100, 100), 3)
-    if 4 in points and 5 in points:
-        cv.line(img, points[4], points[5], (255, 100, 100), 3)
-
-    # torso
-    if 2 in points and 6 in points:
-        cv.line(img, points[2], points[6], (0, 0, 255), 3)
-    if 6 in points and 3 in points:
-        cv.line(img, points[6], points[3], (0, 0, 255), 3)
-    if 2 in points and 12 in points:
-        cv.line(img, points[2], points[12], (0, 0, 255), 3)
-    if 12 in points and 7 in points:
-        cv.line(img, points[12], points[7], (0, 0, 255), 3)
-    if 7 in points and 13 in points:
-        cv.line(img, points[7], points[13], (0, 0, 255), 3)
-    if 13 in points and 3 in points:
-        cv.line(img, points[13], points[3], (0, 0, 255), 3)
-
-    # arms
-    if 12 in points and 11 in points:
-        cv.line(img, points[12], points[11], (0, 255, 0), 3)
-    if 11 in points and 10 in points:
-        cv.line(img, points[11], points[10], (0, 255, 0), 3)
-    if 13 in points and 14 in points:
-        cv.line(img, points[13], points[14], (0, 255, 0), 3)
-    if 14 in points and 15 in points:
-        cv.line(img, points[14], points[15], (0, 255, 0), 3)
-
-    # headrect
-    if head_rect:
-        p1 = (int(head_rect[0]), int(head_rect[1]))
-        p2 = (int(head_rect[2]), int(head_rect[3]))
-        cv.rectangle(img, p1, p2, (150, 100, 255), 3)
-
-    # joints
-    for k, p in points.iteritems():
-        cv.circle(img, p, 5, (0, 255, 0), -1)
-        cv.circle(img, p, 3, (0, 0, 255), -1)
-        cv.putText(img, '%d' % k, p,
-                   cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
-
-
-def del_and_create(dname):
-    if os.path.exists(dname):
-        shutil.rmtree(dname)
-    os.makedirs(dname)
+import csv
 
 
 def fix_wrong_joints(joint):
@@ -110,32 +23,13 @@ def fix_wrong_joints(joint):
     return joint
 
 
-def save_sample_images():
-    out_dir = 'mpii/samples'
-    if not os.path.exists(out_dir):
-        os.mkdir(out_dir)
-    for i, line in enumerate(open('mpii/joints.json')):
-        joints = json.loads(line.strip())
-        img = cv.imread('mpii/images/%s' % joints['filename'])
-        joint_pos = joints['joint_pos']
-        joint_pos = dict([(int(k), v) for k, v in joint_pos.iteritems()])
-        head_rect = joints['head_rect']
-        draw_joints(img, joint_pos, head_rect)
-        cv.imwrite('%s/%s' % (out_dir, joints['filename']), img)
-        print i
-
-
 def save_joints():
-    datadir = 'data/mpii'
-    train_joints_fn = 'data/mpii/train_joints.csv'
-    test_joints_fn = 'data/mpii/test_joints.csv'
-    mat = loadmat('%s/mpii_human_pose_v1_u12_1.mat' % datadir)
+    anno_dir = 'data/mpii/mpii_human_pose_v1_u12_1'
+    joint_data_fn = 'data/mpii/data.json'
+    mat = loadmat('data/mpii/mpii_human_pose_v1_u12_1.mat')
 
-    fp_train = open(train_joints_fn, 'w')
-    fp_test = open(test_joints_fn, 'w')
+    fp = open(joint_data_fn, 'w')
 
-    train_num = 0
-    test_num = 0
     for i, (anno, train_flag) in enumerate(
         zip(mat['RELEASE']['annolist'][0, 0][0],
             mat['RELEASE']['img_train'][0, 0][0])):
@@ -143,10 +37,27 @@ def save_joints():
         img_fn = anno['image']['name'][0, 0][0]
         train_flag = int(train_flag)
 
+        head_rect = []
+        if 'x1' in str(anno['annorect'].dtype):
+            head_rect = zip(
+                [x1[0, 0] for x1 in anno['annorect']['x1'][0]],
+                [y1[0, 0] for y1 in anno['annorect']['y1'][0]],
+                [x2[0, 0] for x2 in anno['annorect']['x2'][0]],
+                [y2[0, 0] for y2 in anno['annorect']['y2'][0]])
+
         if 'annopoints' in str(anno['annorect'].dtype):
             annopoints = anno['annorect']['annopoints'][0]
-            for annopoint in annopoints:
+            head_x1s = anno['annorect']['x1'][0]
+            head_y1s = anno['annorect']['y1'][0]
+            head_x2s = anno['annorect']['x2'][0]
+            head_y2s = anno['annorect']['y2'][0]
+            for annopoint, head_x1, head_y1, head_x2, head_y2 in zip(annopoints, head_x1s, head_y1s, head_x2s, head_y2s):
                 if annopoint != []:
+                    head_rect = [float(head_x1[0, 0]),
+                                 float(head_y1[0, 0]),
+                                 float(head_x2[0, 0]),
+                                 float(head_y2[0, 0])]
+
                     # joint coordinates
                     annopoint = annopoint['point'][0, 0]
                     j_id = [str(j_i[0, 0]) for j_i in annopoint['id'][0]]
@@ -155,14 +66,71 @@ def save_joints():
                     joint_pos = {}
                     for _j_id, (_x, _y) in zip(j_id, zip(x, y)):
                         joint_pos[str(_j_id)] = [float(_x), float(_y)]
-                    joint_pos = fix_wrong_joints(joint_pos)
+                    # joint_pos = fix_wrong_joints(joint_pos)
 
-                    print img_fn, joint_pos
-                    print joint_pos.values()
-                    print zip(x, y)
-                    sys.exit()
+                    # visiblity list
+                    if 'is_visible' in str(annopoint.dtype):
+                        vis = [v[0] if v else [0]
+                               for v in annopoint['is_visible'][0]]
+                        vis = dict([(k, int(v[0])) if len(v) > 0 else v
+                                    for k, v in zip(j_id, vis)])
+                    else:
+                        vis = None
 
-    print train_num, test_num
+                    if len(joint_pos) == 16:
+                        data = {
+                            'filename': img_fn,
+                            'train': train_flag,
+                            'head_rect': head_rect,
+                            'is_visible': vis,
+                            'joint_pos': joint_pos
+                        }
+
+                        print >> fp, json.dumps(data)
+
+
+def write_line(datum, fp):
+    joints = sorted([[int(k), v]
+                     for k, v in datum['joint_pos'].iteritems()])
+    joints = np.array([j for i, j in joints]).flatten()
+
+    out = [datum['filename']]
+    out.extend(joints)
+    out = [str(o) for o in out]
+    out = ','.join(out)
+
+    print >> fp, out
+
+
+def split_train_test():
+    fp_test = open('data/mpii/test_joints.csv', 'w')
+    fp_train = open('data/mpii/train_joints.csv', 'w')
+    all_data = open('data/mpii/data.json').readlines()
+    N = len(all_data)
+    N_test = int(N * 0.1)
+    N_train = N - N_test
+
+    print 'N:', N
+    print 'N_train:', N_train
+    print 'N_test:', N_test
+
+    np.random.seed(1701)
+    perm = np.random.permutation(N)
+    test_indices = perm[:N_test]
+    train_indices = perm[N_test:]
+
+    print 'train_indices:', len(train_indices)
+    print 'test_indices:', len(test_indices)
+
+    for i in train_indices:
+        datum = json.loads(all_data[i].strip())
+        write_line(datum, fp_train)
+
+    for i in test_indices:
+        datum = json.loads(all_data[i].strip())
+        write_line(datum, fp_test)
+
+
 if __name__ == '__main__':
     save_joints()
-    # save_sample_images()
+    split_train_test()

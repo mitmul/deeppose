@@ -19,8 +19,11 @@ This script downloads FLIC-full dataset (http://vision.grasp.upenn.edu/cgi-bin/i
 
 ## MPII Dataset
 
-- train: 18079, test: 6908
-
+- # of training images: 18079, # of test images: 6908
+    - test images don't have any annotations
+    - so we split trining imges into training/test joint set
+    - each joint set has
+- # of training joint set: 17928, # of test joint set: 1991
 
 # Start training
 
