@@ -119,6 +119,7 @@ if __name__ == '__main__':
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
 
+    mean_error = 0.0
     for i, line in enumerate(test_dl):
         # data loading
         img_fn = line.split(',')[args.fname_index]
@@ -135,7 +136,8 @@ if __name__ == '__main__':
         img_label, label = trans.revert(img, label, np.int)
 
         # calc mean_error
-        mean_error = np.linalg.norm(pred - label) / len(pred)
+        error = np.linalg.norm(pred - label) / len(pred)
+        mean_error += error
 
         img_pred = np.array(img_pred.copy())
         img_label = np.array(img_label.copy())
@@ -147,10 +149,12 @@ if __name__ == '__main__':
         draw_joints(img_label, label, args.draw_limb, args.text_scale)
         draw_joints(img_pred, pred, args.draw_limb, args.text_scale)
 
-        print(img_fn)
+        print('{}\terror:{:.4f}\tmean_error:{:.4f}'.format(
+            img_fn, error, mean_error / (i + 1)))
 
         fn, ext = os.path.splitext(img_fn)
-        cv.imwrite('%s/%s_pred%s' % (out_dir, fn, ext), img_pred)
+        cv.imwrite('%s/%s_pred_%.4f%s' %
+                   (out_dir, fn, error, ext), img_pred)
         cv.imwrite('%s/%s_label%s' % (out_dir, fn, ext), img_label)
 
     # save tiled image of randomly chosen results and labels
