@@ -8,6 +8,7 @@ deeppose
     - and then, if you want to train networks with GPU, `$ pip install chainer-cuda-deps`
 - progressbar2
     - `$ pip install progressbar2`
+    - NOTE: it's not `progressbar`!
 
 # Data preparation
 
@@ -17,7 +18,7 @@ deeppose
 
 This script downloads FLIC-full dataset (http://vision.grasp.upenn.edu/cgi-bin/index.php?n=VideoLearning.FLIC) and perform cropping regions of human and save poses as numpy files into FLIC-full directory.
 
-## MPII Dataset
+## (MPII Dataset)[http://human-pose.mpi-inf.mpg.de/#download]
 
 - # of training images: 18079, # of test images: 6908
     - test images don't have any annotations
