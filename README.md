@@ -110,6 +110,9 @@ See the help messages with `--help` option for details.
     --n_imgs 25
 ```
 
+### Create animated GIF to compare predictions and labels
 
-
-run these above command from this root dir.
+```
+    cd results/AlexNet_2015
+    bash ../../scripts/create_anime.sh test_450_tiled_pred.jpg test_450_tiled_label.jpg test_450.gif
+```
