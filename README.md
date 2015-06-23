@@ -90,10 +90,11 @@ See the help messages with `--help` option for details.
 
 ```
     python scripts/predict_flic.py \
-    --model results/AlexNet_2015-06-22_13-00-34_143494563481/AlexNet.py \
-    --param results/AlexNet_2015-06-22_13-00-34_143494563481/AlexNetBN_LCN_AdaGrad_lr-0.0005_epoch_400.chainermodel \
-    --gpu 8 \
+    --model results/AlexNet_2015/AlexNet.py \
+    --param results/AlexNet_2015/AlexNet_epoch_400.chainermodel \
     --datadir data/FLIC-full
+    --gpu 0 \
+    --batchsize 128
 ```
 
-run the above command from deeppose's root dir.
+run the above command from this root dir.
