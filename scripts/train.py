@@ -74,7 +74,14 @@ def get_model_optimizer(result_dir, args):
         model.to_gpu()
 
     # prepare optimizer
-    optimizer = optimizers.AdaGrad(lr=0.0005)
+    if args.opt == 'AdaGrad':
+        optimizer = optimizers.AdaGrad(lr=0.0005)
+    elif args.opt == 'MomentumSGD':
+        optimizer = optimizers.MomentumSGD(lr=0.0005, momentum=0.9)
+    elif args.opt == 'Adam':
+        optimizer = optimizers.Adam()
+    else:
+        raise Exception('No optimizer is selected')
     optimizer.setup(model.collect_parameters())
 
     return model, optimizer
@@ -167,13 +174,13 @@ def get_log_msg(stage, epoch, sum_loss, N, args, st):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model', type=str, default='models/AlexNet.py',
+    parser.add_argument('--model', type=str, default='models/AlexNet_flic.py',
                         help='model definition file in models dir')
-    parser.add_argument('--gpu', type=int, default=-1)
-    parser.add_argument('--epoch', type=int, default=50)
-    parser.add_argument('--batchsize', type=int, default=32)
-    parser.add_argument('--prefix', type=str, default='FunctionSet')
-    parser.add_argument('--snapshot', type=int, default=5)
+    parser.add_argument('--gpu', type=int, default=0)
+    parser.add_argument('--epoch', type=int, default=1000)
+    parser.add_argument('--batchsize', type=int, default=128)
+    parser.add_argument('--prefix', type=str, default='AlexNet_flic')
+    parser.add_argument('--snapshot', type=int, default=10)
     parser.add_argument('--datadir', type=str, default='data/FLIC-full')
     parser.add_argument('--channel', type=int, default=3)
     parser.add_argument('--flip', type=bool, default=True,
@@ -184,7 +191,7 @@ if __name__ == '__main__':
                         help='random number infimum for padding size when cropping')
     parser.add_argument('--crop_pad_sup', type=float, default=2.0,
                         help='random number supremum for padding size when cropping')
-    parser.add_argument('--shift', type=int, default=5,
+    parser.add_argument('--shift', type=int, default=10,
                         help='slide an image when cropping')
     parser.add_argument('--lcn', type=bool, default=True,
                         help='local contrast normalization for data augmentation')
@@ -197,6 +204,8 @@ if __name__ == '__main__':
                         help='*.chainermodel file path to restart from')
     parser.add_argument('--epoch_offset', type=int, default=0,
                         help='set greater than 0 if you restart from a chainermodel pickle')
+    parser.add_argument('--opt', type=str, default='AdaGrad',
+                        choices=['AdaGrad', 'MomentumSGD', 'Adam'])
     args = parser.parse_args()
 
     # create result dir
