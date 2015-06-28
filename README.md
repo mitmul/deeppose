@@ -16,7 +16,7 @@ deeppose
 # Data preparation
 
 ```
-bash scripts/downloader.sh
+bash scripts/download.sh
 python scripts/flic_dataset.py
 python scripts/lsp_dataset.py
 ```
@@ -38,7 +38,7 @@ This script downloads FLIC-full dataset (http://vision.grasp.upenn.edu/cgi-bin/i
 
 ```
 nohup python scripts/train.py \
---model models/AlexNet.py \
+--model models/AlexNet_flic.py \
 --gpu 0 \
 --epoch 1000 \
 --batchsize 128 \
@@ -83,7 +83,7 @@ python scripts/predict_flic.py \
 
 ```
 python scripts/predict_flic.py \
---model results/AlexNet_2015/AlexNet.py \
+--model results/AlexNet_2015/AlexNet_flic.py \
 --param results/AlexNet_2015/AlexNet_epoch_450.chainermodel \
 --mode tile \
 --n_imgs 25
