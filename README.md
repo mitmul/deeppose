@@ -36,6 +36,14 @@ This script downloads FLIC-full dataset (http://vision.grasp.upenn.edu/cgi-bin/i
 
 ## For FLIC Dataset
 
+Just run:
+
+```
+nohup python scripts/train.py > AlexNet_flic_LCN_AdaGrad_lr-0.0005.log 2>&1 &
+```
+
+It is same as:
+
 ```
 nohup python scripts/train.py \
 --model models/AlexNet_flic.py \
@@ -46,15 +54,17 @@ nohup python scripts/train.py \
 --snapshot 10 \
 --datadir data/FLIC-full \
 --channel 3 \
---flip True \
+--flip 1 \
 --size 220 \
 --crop_pad_inf 1.5 \
 --crop_pad_sup 2.0 \
 --shift 5 \
---lcn True \
+--lcn 1 \
 --joint_num 7 \
 > AlexNet_LCN_AdaGrad_lr-0.0005.log 2>&1 &
 ```
+
+`--flip 1` means it performs LR flip augmentation, and `--flip 0` does nothing. `--lcn 1` means local(should be said "global"?) contrast normalization will be applied.
 
 See the help messages with `--help` option for details.
 

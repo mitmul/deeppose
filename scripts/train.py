@@ -8,12 +8,10 @@ import argparse
 import logging
 import time
 import os
-import sys
 import imp
 import shutil
 import numpy as np
-from chainer import optimizers, cuda, Variable
-import chainer.functions as F
+from chainer import optimizers, cuda
 from transform import Transform
 import cPickle as pickle
 from draw_loss import draw_loss_curve
@@ -178,12 +176,12 @@ if __name__ == '__main__':
                         help='model definition file in models dir')
     parser.add_argument('--gpu', type=int, default=0)
     parser.add_argument('--epoch', type=int, default=1000)
-    parser.add_argument('--batchsize', type=int, default=128)
+    parser.add_argument('--batchsize', type=int, default=32)
     parser.add_argument('--prefix', type=str, default='AlexNet_flic')
     parser.add_argument('--snapshot', type=int, default=10)
     parser.add_argument('--datadir', type=str, default='data/FLIC-full')
     parser.add_argument('--channel', type=int, default=3)
-    parser.add_argument('--flip', type=bool, default=True,
+    parser.add_argument('--flip', type=int, default=1,
                         help='flip left and right for data augmentation')
     parser.add_argument('--size', type=int, default=220,
                         help='resizing')
@@ -191,9 +189,9 @@ if __name__ == '__main__':
                         help='random number infimum for padding size when cropping')
     parser.add_argument('--crop_pad_sup', type=float, default=2.0,
                         help='random number supremum for padding size when cropping')
-    parser.add_argument('--shift', type=int, default=10,
+    parser.add_argument('--shift', type=int, default=5,
                         help='slide an image when cropping')
-    parser.add_argument('--lcn', type=bool, default=True,
+    parser.add_argument('--lcn', type=int, default=1,
                         help='local contrast normalization for data augmentation')
     parser.add_argument('--joint_num', type=int, default=7)
     parser.add_argument('--fname_index', type=int, default=0,
@@ -220,11 +218,13 @@ if __name__ == '__main__':
     logging.info('# of test data:{}'.format(N_test))
 
     # augmentation setting
+    _flip = True if args.flip == 1 else False
+    _lcn = True if args.lcn == 1 else False
     trans = Transform(padding=[args.crop_pad_inf, args.crop_pad_sup],
-                      flip=args.flip,
+                      flip=_flip,
                       size=args.size,
                       shift=args.shift,
-                      lcn=args.lcn)
+                      lcn=_lcn)
 
     logging.info(time.strftime('%Y-%m-%d_%H-%M-%S'))
     logging.info('start training...')
