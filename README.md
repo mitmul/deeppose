@@ -41,7 +41,7 @@ nohup python scripts/train.py \
 --model models/AlexNet_flic.py \
 --gpu 0 \
 --epoch 1000 \
---batchsize 128 \
+--batchsize 32 \
 --prefix AlexNet_LCN_AdaGrad_lr-0.0005 \
 --snapshot 10 \
 --datadir data/FLIC-full \
@@ -57,6 +57,12 @@ nohup python scripts/train.py \
 ```
 
 See the help messages with `--help` option for details.
+
+### GPU memory requirement
+
+- batchsize: 128 -> about 2870 MiB
+- batchsize: 64 -> about 1890 MiB
+- batchsize: 32 (default) -> 1374 MiB
 
 # Visualize Filters of 1st conv layer
 
