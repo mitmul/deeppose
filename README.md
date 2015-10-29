@@ -11,6 +11,7 @@ NOTE: This is not official implementation. Original paper is [DeepPose: Human Po
     - NOTE: it's not `progressbar`, needs `2`!
 - numpy 1.9+
 - scipy 0.16+
+- scikit-learn 0.15+
 - OpenCV 2.4+
 
 # Data preparation

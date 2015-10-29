@@ -6,9 +6,9 @@ import sys
 import matplotlib
 if sys.platform in ['linux', 'linux2']:
     matplotlib.use('Agg')
+import argparse
 import matplotlib.pyplot as plt
 import numpy as np
-import argparse
 
 
 def draw_loss_curve(logfile, outfile):

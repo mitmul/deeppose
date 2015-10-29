@@ -3,12 +3,12 @@
 
 from __future__ import print_function
 import re
-import argparse
 import os
+import glob
+import argparse
 import numpy as np
 import cv2 as cv
 from scipy.io import loadmat
-import glob
 from os.path import basename as b
 
 if __name__ == '__main__':

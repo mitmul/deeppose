@@ -5,10 +5,10 @@ import json
 import os
 import shutil
 import sys
+import csv
 import cv2 as cv
 import numpy as np
 from scipy.io import loadmat
-import csv
 
 
 def fix_wrong_joints(joint):

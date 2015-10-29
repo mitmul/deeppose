@@ -5,10 +5,10 @@ import glob
 import re
 import os
 import argparse
-from chainer import cuda
 import cPickle as pickle
 import numpy as np
 import cv2 as cv
+from chainer import cuda
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
