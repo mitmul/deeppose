@@ -1,17 +1,17 @@
-deeppose
+DeepPose
 ========
+
+NOTE: This is not official implementation. Original paper is [DeepPose: Human Pose Estimation via Deep Neural Networks](http://arxiv.org/abs/1312.4659).
 
 # Requirements
 
-- [Chainer](https://github.com/pfnet/chainer) (Neural network framework)
-    - I'm using master version on GitHub, so
-        - `git clone https://github.com/pfnet/chainer.git`
-        - `cd chainer; python setup.py install`
-    - and then, if you want to train networks with GPU,
-        - `pip install chainer-cuda-deps`
+- [Chainer 1.4+](https://github.com/pfnet/chainer) (Neural network framework)
 - progressbar2
     - `pip install progressbar2`
-    - NOTE: it's not `progressbar`!
+    - NOTE: it's not `progressbar`, needs `2`!
+- numpy 1.9+
+- scipy 0.16+
+- OpenCV 2.4+
 
 # Data preparation
 

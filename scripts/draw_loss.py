@@ -32,6 +32,7 @@ def draw_loss_curve(logfile, outfile):
     if not len(train_loss) > 1:
         return
 
+    plt.clf()
     fig, ax1 = plt.subplots()
     plt.plot(train_loss[:, 0], train_loss[:, 1], label='training loss')
     plt.plot(test_loss[:, 0], test_loss[:, 1], label='test loss')

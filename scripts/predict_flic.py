@@ -7,13 +7,14 @@ sys.path.append('tests')
 import glob
 import re
 import os
-import numpy as np
-from chainer import cuda
 import imp
 import argparse
-from transform import Transform
-import cPickle as pickle
+import six
+import six.moves.cPickle as pickle
+import numpy as np
 import cv2 as cv
+from chainer import cuda
+from transform import Transform
 from test_flic_dataset import draw_joints
 
 
@@ -79,7 +80,7 @@ def test(args):
 
     # load model
     if args.gpu >= 0:
-        cuda.init(args.gpu)
+        cuda.get_device(args.gpu).use()
     model = load_model(args)
     if args.gpu >= 0:
         model.to_gpu()
@@ -87,7 +88,7 @@ def test(args):
         model.to_cpu()
 
     # create output dir
-    epoch = int(re.search(ur'epoch_([0-9]+)', args.param).groups()[0])
+    epoch = int(re.search('epoch_([0-9]+)', args.param).groups()[0])
     result_dir = os.path.dirname(args.param)
     out_dir = '%s/test_%d' % (result_dir, epoch)
     if not os.path.exists(out_dir):
@@ -152,7 +153,7 @@ def test(args):
 
 def tile(args):
     # create output dir
-    epoch = int(re.search(ur'epoch_([0-9]+)', args.param).groups()[0])
+    epoch = int(re.search('epoch_([0-9]+)', args.param).groups()[0])
     result_dir = os.path.dirname(args.param)
     out_dir = '%s/test_%d' % (result_dir, epoch)
     if not os.path.exists(out_dir):

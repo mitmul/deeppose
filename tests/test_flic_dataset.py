@@ -11,9 +11,9 @@ import glob
 
 def draw_limb(img, joints, i, j, color):
     cv.line(img, joints[i], joints[j], (255, 255, 255),
-            thickness=2, lineType=cv.CV_AA)
+            thickness=2, lineType=16)
     cv.line(img, joints[i], joints[j], color,
-            thickness=1, lineType=cv.CV_AA)
+            thickness=1, lineType=16)
 
     return img
 
@@ -38,9 +38,9 @@ def draw_joints(img, joints, line=True, text_scale=0.5):
         cv.circle(img, joint, 5, (0, 0, 255), -1)
         cv.circle(img, joint, 3, (0, 255, 0), -1)
         cv.putText(img, '%d' % j, joint, cv.FONT_HERSHEY_SIMPLEX, text_scale,
-                   (0, 0, 0), thickness=3, lineType=cv.CV_AA)
+                   (0, 0, 0), thickness=3, lineType=16)
         cv.putText(img, '%d' % j, joint, cv.FONT_HERSHEY_SIMPLEX, text_scale,
-                   (255, 255, 255), thickness=1, lineType=cv.CV_AA)
+                   (255, 255, 255), thickness=1, lineType=16)
 
     return img
 
