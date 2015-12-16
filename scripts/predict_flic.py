@@ -9,10 +9,9 @@ import re
 import os
 import imp
 import argparse
-import six.moves.cPickle as pickle
 import numpy as np
 import cv2 as cv
-from chainer import cuda
+from chainer import cuda, serializers, Variable
 from transform import Transform
 from test_flic_dataset import draw_joints
 
@@ -20,8 +19,9 @@ from test_flic_dataset import draw_joints
 def load_model(args):
     model_fn = os.path.basename(args.model)
     model_name = model_fn.split('.')[0]
-    module = imp.load_source(model_fn.split('.')[0], args.model)
-    model = pickle.load(open(args.param, 'rb'))
+    model = imp.load_source(model_name, args.model).model
+    serializers.load_hdf5(args.param, model)
+    model.train = False
 
     return model
 
@@ -48,7 +48,7 @@ def create_tiled_image(perm, out_dir, result_dir, epoch, suffix, N=25):
     fnames = np.array(sorted(glob.glob('%s/*%s.jpg' % (out_dir, suffix))))
     tile_fnames = fnames[perm[:N]]
 
-    h, w, c, pad = 220, 220, 3, 2
+    h, w, pad = 220, 220, 2
     side = int(np.ceil(np.sqrt(len(tile_fnames))))
     canvas = np.ones((side * w + pad * (side + 1),
                       side * h + pad * (side + 1), 3))
@@ -87,7 +87,7 @@ def test(args):
         model.to_cpu()
 
     # create output dir
-    epoch = int(re.search('epoch_([0-9]+)', args.param).groups()[0])
+    epoch = int(re.search('epoch-([0-9]+)', args.param).groups()[0])
     result_dir = os.path.dirname(args.param)
     out_dir = '%s/test_%d' % (result_dir, epoch)
     if not os.path.exists(out_dir):
@@ -105,10 +105,12 @@ def test(args):
             input_data = cuda.to_gpu(input_data.astype(np.float32))
             labels = cuda.to_gpu(labels.astype(np.float32))
 
-        _, preds = model.forward(input_data, labels, train=False)
+        x = Variable(input_data, volatile=True)
+        t = Variable(labels, volatile=True)
+        model(x, t)
 
         if args.gpu >= 0:
-            preds = cuda.to_cpu(preds.data)
+            preds = cuda.to_cpu(model.pred.data)
             input_data = cuda.to_cpu(input_data)
             labels = cuda.to_cpu(labels)
 
@@ -152,7 +154,7 @@ def test(args):
 
 def tile(args):
     # create output dir
-    epoch = int(re.search('epoch_([0-9]+)', args.param).groups()[0])
+    epoch = int(re.search('epoch-([0-9]+)', args.param).groups()[0])
     result_dir = os.path.dirname(args.param)
     out_dir = '%s/test_%d' % (result_dir, epoch)
     if not os.path.exists(out_dir):
@@ -189,13 +191,16 @@ if __name__ == '__main__':
     parser.add_argument('--size', type=int, default=220,
                         help='resizing')
     parser.add_argument('--crop_pad_inf', type=float, default=1.5,
-                        help='random number infimum for padding size when cropping')
+                        help='random number infimum for padding size when'
+                             ' cropping')
     parser.add_argument('--crop_pad_sup', type=float, default=2.0,
-                        help='random number supremum for padding size when cropping')
+                        help='random number supremum for padding size when'
+                             ' cropping')
     parser.add_argument('--shift', type=int, default=5,
                         help='slide an image when cropping')
     parser.add_argument('--lcn', type=bool, default=True,
-                        help='local contrast normalization for data augmentation')
+                        help='local contrast normalization for data'
+                             ' augmentation')
     parser.add_argument('--joint_num', type=int, default=7)
     parser.add_argument('--fname_index', type=int, default=0,
                         help='the index of image file name in a csv line')
