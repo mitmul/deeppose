@@ -24,6 +24,7 @@ def get_arguments():
                         help='flip left and right for data augmentation')
     parser.add_argument('--size', type=int, default=220,
                         help='resizing')
+    parser.add_argument('--cropping', type=int, default=1)
     parser.add_argument('--crop_pad_inf', type=float, default=1.5,
                         help='random number infimum for padding size when'
                              ' cropping')

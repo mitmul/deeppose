@@ -19,7 +19,7 @@ class Transform(object):
         self.img = cv.imread(img_fn)
         self.joints = np.asarray([int(float(p)) for p in datum[joint_index:]])
 
-        if self.args.shift > 0:
+        if self.args.cropping == 1:
             self.cropping()
         if self.args.flip == 1:
             self.fliplr()

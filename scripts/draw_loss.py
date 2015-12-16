@@ -35,19 +35,22 @@ def draw_loss_curve(logfile, outfile):
 
         plt.clf()
         fig, ax1 = plt.subplots()
-        ax1.plot(train_loss[:, 0], train_loss[:, 1], label='training loss',
-                 c='r')
+        ax1.plot(train_loss[:, 0], train_loss[:, 1],
+                 label='training loss', c='r')
         ax1.set_xlim([2, len(train_loss)])
         ax1.set_xlabel('epoch')
         ax1.set_ylabel('training loss')
-        ax2 = ax1.twinx()
-        ax2.plot(test_loss[:, 0], test_loss[:, 1], label='test loss',
-                 c='b')
-        ax2.set_xlim([1, len(test_loss)])
-        ax2.set_ylabel('test loss')
-
         ax1.legend(bbox_to_anchor=(0.25, -0.1), loc=9)
-        ax2.legend(bbox_to_anchor=(0.75, -0.1), loc=9)
+
+        if len(test_loss) > 1:
+            ax2 = ax1.twinx()
+            ax2.plot(test_loss[:, 0], test_loss[:, 1], label='test loss',
+                     c='b')
+            ax2.set_ylabel('test loss')
+
+            ax2.legend(bbox_to_anchor=(0.75, -0.1), loc=9)
+            ax2.set_ylim(ax1.get_ylim())
+            
         plt.savefig(outfile, bbox_inches='tight')
 
     except Exception as e:

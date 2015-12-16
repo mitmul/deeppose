@@ -36,7 +36,7 @@ def load_data(trans, args, x):
     label = np.zeros((len(x), d))
 
     for i, line in enumerate(x):
-        d, t = trans.transform(line.split(','), args.datadir, False,
+        d, t = trans.transform(line.split(','), args.datadir,
                                args.fname_index, args.joint_index)
         input_data[i] = d.transpose((2, 0, 1))
         label[i] = t
@@ -67,10 +67,7 @@ def create_tiled_image(perm, out_dir, result_dir, epoch, suffix, N=25):
 
 def test(args):
     # augmentation setting
-    trans = Transform(padding=[args.crop_pad_inf, args.crop_pad_sup],
-                      size=args.size,
-                      shift=args.shift,
-                      lcn=bool(args.lcn))
+    trans = Transform(args)
 
     # test data
     test_fn = '%s/test_joints.csv' % args.datadir
@@ -184,8 +181,11 @@ if __name__ == '__main__':
                         help='resize the results of tiling')
     parser.add_argument('--seed', type=int, default=9,
                         help='random seed to select images to be tiled')
-
     parser.add_argument('--channel', type=int, default=3)
+
+    parser.add_argument('--flip', type=int, default=0,
+                        help='flip left and right for data augmentation')
+    parser.add_argument('--cropping', type=int, default=1)
     parser.add_argument('--size', type=int, default=220,
                         help='resizing')
     parser.add_argument('--lcn', type=bool, default=True,
