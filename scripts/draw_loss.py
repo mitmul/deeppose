@@ -49,8 +49,8 @@ def draw_loss_curve(logfile, outfile):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--logfile', '-f', type=str)
-    parser.add_argument('--outfile', '-o', type=str)
+    parser.add_argument('--logfile', type=str, default='log.txt')
+    parser.add_argument('--outfile', type=str, default='log.png')
     args = parser.parse_args()
     print(args)
 
