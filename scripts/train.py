@@ -4,6 +4,7 @@
 from __future__ import print_function
 import sys
 sys.path.append('../../scripts')  # to resume from result dir
+import six
 import logging
 import time
 import os
@@ -114,9 +115,9 @@ def train(train_dl, N, model, optimizer, trans, args, input_q, data_q):
 
     # training
     xp = cuda.cupy if args.gpu >= 0 and cuda.available else np
-    for i in range(0, N, args.batchsize):
+    for i in six.moves.range(0, N, args.batchsize):
         input_q.put(train_dl[perm[i:i + args.batchsize]])
-    for i in range(0, N, args.batchsize):
+    for i in six.moves.range(0, N, args.batchsize):
         input_data, label = data_q.get()
         input_data = xp.asarray(input_data, dtype=np.float32)
         label = xp.asarray(label, dtype=np.float32)
@@ -138,9 +139,9 @@ def eval(test_dl, N, model, trans, args, input_q, data_q):
 
     # training
     xp = cuda.cupy if args.gpu >= 0 and cuda.available else np
-    for i in xrange(0, N, args.batchsize):
+    for i in six.moves.range(0, N, args.batchsize):
         input_q.put(test_dl[i:i + args.batchsize])
-    for i in xrange(0, N, args.batchsize):
+    for i in six.moves.range(0, N, args.batchsize):
         input_data, label = data_q.get(True, None)
         input_data = xp.asarray(input_data, dtype=np.float32)
         label = xp.asarray(label, dtype=np.float32)

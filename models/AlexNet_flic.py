@@ -1,31 +1,30 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from chainer import Variable, FunctionSet, cuda
+from chainer import Variable, Chain
+import chainer.links as L
 import chainer.functions as F
-import chainer.functions.basic_math as M
 
 
-class AlexNet_flic(FunctionSet):
+class AlexNet_flic(Chain):
 
     """
-    VGGnet with Batch Normalization and Parameterized ReLU
-    - It works fine with Adam
+    AlexNet for FLIC dataset
     """
 
     def __init__(self):
         super(AlexNet_flic, self).__init__(
-            conv1=F.Convolution2D(3, 96, 11, stride=4, pad=1),
-            conv2=F.Convolution2D(96, 256, 5, stride=1, pad=2),
-            conv3=F.Convolution2D(256, 384, 3, stride=1, pad=1),
-            conv4=F.Convolution2D(384, 384, 3, stride=1, pad=1),
-            conv5=F.Convolution2D(384, 256, 3, stride=1, pad=1),
-            fc6=F.Linear(9216, 4096),
-            fc7=F.Linear(4096, 4096),
-            fc8=F.Linear(4096, 14)
+            conv1=L.Convolution2D(3, 96, 11, stride=4, pad=1),
+            conv2=L.Convolution2D(96, 256, 5, stride=1, pad=2),
+            conv3=L.Convolution2D(256, 384, 3, stride=1, pad=1),
+            conv4=L.Convolution2D(384, 384, 3, stride=1, pad=1),
+            conv5=L.Convolution2D(384, 256, 3, stride=1, pad=1),
+            fc6=L.Linear(9216, 4096),
+            fc7=L.Linear(4096, 4096),
+            fc8=L.Linear(4096, 14)
         )
 
-    def forward(self, x_data, y_data, train=True):
+    def __call__(self, x_data, y_data, train=True):
         x = Variable(x_data, volatile=not train)
         t = Variable(y_data, volatile=not train)
 

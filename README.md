@@ -17,7 +17,7 @@ NOTE: This is not official implementation. Original paper is [DeepPose: Human Po
 # Data preparation
 
 ```
-bash scripts/download.sh
+bash shells/download.sh
 python scripts/flic_dataset.py
 python scripts/lsp_dataset.py
 ```
