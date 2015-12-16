@@ -9,13 +9,14 @@ import six
 import logging
 import time
 import os
+import ctypes
 import imp
 import shutil
 import numpy as np
 from chainer import Variable, optimizers, cuda, serializers
 from transform import Transform
 from draw_loss import draw_loss_curve
-from multiprocessing import Process, Queue
+from multiprocessing import Process, Queue, Array
 from cmd_options import get_arguments
 
 
@@ -80,9 +81,9 @@ def get_model_optimizer(args):
     if 'opt' in args:
         # prepare optimizer
         if args.opt == 'AdaGrad':
-            optimizer = optimizers.AdaGrad(lr=0.0005)
+            optimizer = optimizers.AdaGrad(lr=args.lr)
         elif args.opt == 'MomentumSGD':
-            optimizer = optimizers.MomentumSGD(lr=0.0005, momentum=0.9)
+            optimizer = optimizers.MomentumSGD(lr=args.lr, momentum=0.9)
         elif args.opt == 'Adam':
             optimizer = optimizers.Adam()
         else:
@@ -102,10 +103,36 @@ def get_model_optimizer(args):
         return model
 
 
-def load_data(trans, args, input_q, data_q):
+def transform(args, x_queue, datadir, fname_index, joint_index, o_queue):
+    trans = Transform(args)
+    while True:
+        x = x_queue.get()
+        if x is None:
+            break
+        x, t = trans.transform(x.split(','), datadir, fname_index, joint_index)
+        o_queue.put((x.transpose((2, 0, 1)), t))
+
+
+def load_data(args, input_q, minibatch_q):
     c = args.channel
     s = args.size
     d = args.joint_num * 2
+
+    input_data_base = Array(ctypes.c_float, args.batchsize * c * s * s)
+    input_data = np.ctypeslib.as_array(input_data_base.get_obj())
+    input_data = input_data.reshape((args.batchsize, c, s, s))
+
+    label_base = Array(ctypes.c_float, args.batchsize * d)
+    label = np.ctypeslib.as_array(label_base.get_obj())
+    label = label.reshape((args.batchsize, d))
+
+    x_queue, o_queue = Queue(), Queue()
+    workers = [Process(target=transform,
+                       args=(args, x_queue, args.datadir, args.fname_index,
+                             args.joint_index, o_queue))
+               for _ in range(args.batchsize)]
+    for w in workers:
+        w.start()
 
     while True:
         x_batch = input_q.get()
@@ -113,29 +140,41 @@ def load_data(trans, args, input_q, data_q):
             break
 
         # data augmentation
-        input_data = np.zeros((args.batchsize, c, s, s))
-        label = np.zeros((args.batchsize, d))
-        for j, x in enumerate(x_batch):
-            x, t = trans.transform(x.split(','), args.datadir, True,
-                                   args.fname_index, args.joint_index)
-            input_data[j] = x.transpose((2, 0, 1))
-            label[j] = t
+        for x in x_batch:
+            x_queue.put(x)
+        j = 0
+        while j != len(x_batch):
+            a, b = o_queue.get()
+            input_data[j] = a
+            label[j] = b
+            j += 1
+        minibatch_q.put([input_data, label])
 
-        data_q.put([input_data, label])
+    for _ in range(args.batchsize):
+        x_queue.put(None)
+    for w in workers:
+        w.join()
 
 
-def one_epoch(args, model, optimizer, epoch, input_q, data_q, train):
+def one_epoch(args, model, optimizer, epoch, data, train):
     model.train = True
-    perm = np.random.permutation(N)
     sum_loss = 0
     num = 0
+    N = len(data)
+
+    input_q, minibatch_q = Queue(), Queue()
+    data_loader = Process(target=load_data,
+                          args=(args, input_q, minibatch_q))
+    data_loader.start()
+
+    perm = np.random.permutation(N)
+    for i in six.moves.range(0, N, args.batchsize):
+        input_q.put(data[perm[i:i + args.batchsize]])
 
     # training
     xp = cuda.cupy if args.gpu >= 0 and cuda.available else np
     for i in six.moves.range(0, N, args.batchsize):
-        input_q.put(train_dl[perm[i:i + args.batchsize]])
-    for i in six.moves.range(0, N, args.batchsize):
-        input_data, label = data_q.get()
+        input_data, label = minibatch_q.get()
         input_data = xp.asarray(input_data, dtype=np.float32)
         label = xp.asarray(label, dtype=np.float32)
         x = Variable(input_data, volatile=not train)
@@ -150,6 +189,10 @@ def one_epoch(args, model, optimizer, epoch, input_q, data_q, train):
         num += input_data.shape[0]
 
         logging.info('loss:{}'.format(sum_loss / num))
+
+    # quit training data loading thread
+    input_q.put(None)
+    data_loader.join()
 
     return sum_loss
 
@@ -167,37 +210,19 @@ if __name__ == '__main__':
     logging.info('# of training data:{}'.format(N))
     logging.info('# of test data:{}'.format(N_test))
 
-    # augmentation setting
-    trans = Transform(padding=[args.crop_pad_inf, args.crop_pad_sup],
-                      flip=bool(args.flip),
-                      size=args.size,
-                      shift=args.shift,
-                      lcn=bool(args.lcn))
-
     logging.info(time.strftime('%Y-%m-%d_%H-%M-%S'))
     logging.info('start training...')
-
-    # start training data loading thread
-    tinput_q, tdata_q = Queue(), Queue()
-    tdata_loader = Process(target=load_data,
-                           args=(trans, args, tinput_q, tdata_q))
-    tdata_loader.start()
-
-    # start validation data loading thread
-    vinput_q, vdata_q = Queue(), Queue()
-    vdata_loader = Process(target=load_data,
-                           args=(trans, args, vinput_q, vdata_q))
-    vdata_loader.start()
 
     # learning loop
     for epoch in range(args.epoch_offset + 1, args.epoch + 1):
         # train
-        sum_loss = one_epoch(args, model, optimizer, epoch,
-                             tinput_q, tdata_q, True)
+        sum_loss = one_epoch(args, model, optimizer, epoch, train_dl, True)
         logging.info('epoch:{}\ttraining loss:{}'.format(epoch, sum_loss / N))
-        sum_loss = one_epoch(args, model, optimizer, epoch,
-                             vinput_q, vdata_q, False)
-        logging.info('epoch:{}\ttest loss:{}'.format(epoch, sum_loss / N_test))
+
+        if epoch == 1 or epoch % args.test_freq == 0:
+            sum_loss = one_epoch(args, model, optimizer, epoch, test_dl, False)
+            logging.info('epoch:{}\ttest loss:{}'.format(
+                epoch, sum_loss / N_test))
 
         if epoch == 1 or epoch % args.snapshot == 0:
             model_fn = '{}/epoch-{}.model'.format(args.result_dir, epoch)
@@ -205,12 +230,4 @@ if __name__ == '__main__':
             serializers.save_hdf5(model_fn, model)
             serializers.save_hdf5(opt_fn, optimizer)
 
-        draw_loss_curve(args.log_fn, '{}/log.jpg'.format(args.result_dir))
-
-    # quit training data loading thread
-    tinput_q.put(None)
-    tdata_loader.join()
-
-    # quit data loading thread
-    vinput_q.put(None)
-    vdata_loader.join()
+        draw_loss_curve(args.log_fn, '{}/log.png'.format(args.result_dir))

@@ -90,7 +90,7 @@ See the help messages with `--help` option for details.
 ### Prediction and visualize them and calc mean errors
 
 ```
-python scripts/predict_flic.py \
+python scripts/evaluate_flic.py \
 --model results/AlexNet_2015/AlexNet.py \
 --param results/AlexNet_2015/AlexNet_epoch_400.chainermodel \
 --datadir data/FLIC-full
@@ -102,7 +102,7 @@ python scripts/predict_flic.py \
 ### Tile some randomly selected result images
 
 ```
-python scripts/predict_flic.py \
+python scripts/evaluate_flic.py \
 --model results/AlexNet_2015/AlexNet_flic.py \
 --param results/AlexNet_2015/AlexNet_epoch_450.chainermodel \
 --mode tile \

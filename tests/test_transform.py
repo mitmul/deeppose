@@ -13,6 +13,10 @@ from test_flic_dataset import draw_joints
 
 
 def load_data(trans, args, x):
+    img_fn = '%s/images/%s' % (args.data_dir, x.split(',')[args.fname_index])
+    print(os.path.exists(img_fn), img_fn)
+    orig = cv.imread(img_fn)
+
     c = args.channel
     s = args.size
     d = args.joint_num * 2
@@ -24,7 +28,7 @@ def load_data(trans, args, x):
     input_data[0] = x.transpose((2, 0, 1))
     label[0] = t
 
-    return trans.orig, input_data, label
+    return orig, input_data, label
 
 
 if __name__ == '__main__':
@@ -47,15 +51,13 @@ if __name__ == '__main__':
                         help='local contrast normalization for data'
                              'augmentation')
     parser.add_argument('--joint_num', type=int, default=7)
+    parser.add_argument('--fname_index', type=int, default=0,
+                        help='the index of image file name in a csv line')
     args = parser.parse_args()
     print(args)
 
     # augmentation setting
-    trans = Transform(padding=[args.crop_pad_inf, args.crop_pad_sup],
-                      flip=args.flip,
-                      size=args.size,
-                      shift=args.shift,
-                      lcn=args.lcn)
+    trans = Transform(args)
 
     # test data
     test_fn = '%s/test_joints.csv' % args.data_dir
