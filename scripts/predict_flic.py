@@ -68,10 +68,9 @@ def create_tiled_image(perm, out_dir, result_dir, epoch, suffix, N=25):
 def test(args):
     # augmentation setting
     trans = Transform(padding=[args.crop_pad_inf, args.crop_pad_sup],
-                      flip=args.flip,
                       size=args.size,
                       shift=args.shift,
-                      lcn=args.lcn)
+                      lcn=bool(args.lcn))
 
     # test data
     test_fn = '%s/test_joints.csv' % args.datadir
@@ -185,22 +184,22 @@ if __name__ == '__main__':
                         help='resize the results of tiling')
     parser.add_argument('--seed', type=int, default=9,
                         help='random seed to select images to be tiled')
+
     parser.add_argument('--channel', type=int, default=3)
-    parser.add_argument('--flip', type=bool, default=True,
-                        help='flip left and right for data augmentation')
     parser.add_argument('--size', type=int, default=220,
                         help='resizing')
-    parser.add_argument('--crop_pad_inf', type=float, default=1.5,
-                        help='random number infimum for padding size when'
-                             ' cropping')
-    parser.add_argument('--crop_pad_sup', type=float, default=2.0,
-                        help='random number supremum for padding size when'
-                             ' cropping')
-    parser.add_argument('--shift', type=int, default=5,
-                        help='slide an image when cropping')
     parser.add_argument('--lcn', type=bool, default=True,
                         help='local contrast normalization for data'
                              ' augmentation')
+    parser.add_argument('--crop_pad_inf', type=float, default=1.5,
+                        help='random number infimum for padding size when'
+                             ' cropping')
+    parser.add_argument('--crop_pad_sup', type=float, default=1.5,
+                        help='random number supremum for padding size when'
+                             ' cropping')
+    parser.add_argument('--shift', type=int, default=0,
+                        help='slide an image when cropping')
+
     parser.add_argument('--joint_num', type=int, default=7)
     parser.add_argument('--fname_index', type=int, default=0,
                         help='the index of image file name in a csv line')
