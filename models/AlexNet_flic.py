@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from chainer import Variable, Chain
+from chainer import Chain
 import chainer.links as L
 import chainer.functions as F
 
@@ -23,11 +23,9 @@ class AlexNet_flic(Chain):
             fc7=L.Linear(4096, 4096),
             fc8=L.Linear(4096, 14)
         )
+        self.train = True
 
-    def __call__(self, x_data, y_data, train=True):
-        x = Variable(x_data, volatile=not train)
-        t = Variable(y_data, volatile=not train)
-
+    def __call__(self, x, t):
         h = F.relu(self.conv1(x))
         h = F.max_pooling_2d(h, 3, stride=2)
         h = F.local_response_normalization(h)
@@ -41,10 +39,15 @@ class AlexNet_flic(Chain):
         h = F.relu(self.conv5(h))
         h = F.max_pooling_2d(h, 3, stride=2)
 
-        h = F.dropout(F.relu(self.fc6(h)), train=train, ratio=0.6)
-        h = F.dropout(F.relu(self.fc7(h)), train=train, ratio=0.6)
-        h = self.fc8(h)
+        h = F.dropout(F.relu(self.fc6(h)), train=self.train, ratio=0.6)
+        h = F.dropout(F.relu(self.fc7(h)), train=self.train, ratio=0.6)
 
-        loss = F.mean_squared_error(t, h)
+        self.pred = self.fc8(h)
+        self.loss = F.mean_squared_error(self.pred, t)
 
-        return loss, h
+        if self.train:
+            return self.loss
+        else:
+            return self.pred
+
+model = AlexNet_flic()

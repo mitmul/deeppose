@@ -2,11 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import print_function
-import os
-import shutil
-import glob
 import numpy as np
-import cv2 as cv
 from scipy.io import loadmat
 
 crop_sizes = {

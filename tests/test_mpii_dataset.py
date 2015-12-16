@@ -75,4 +75,4 @@ if __name__ == '__main__':
 
         img = draw_joints(img, joints)
         cv.imwrite('%s/%s' % (out_dir, img_fn), img)
-        print img_fn
+        print(img_fn)

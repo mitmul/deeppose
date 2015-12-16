@@ -5,8 +5,6 @@ from __future__ import print_function
 import os
 import numpy as np
 import cv2 as cv
-from chainer import cuda
-import imp
 import argparse
 import sys
 sys.path.append('scripts')
@@ -38,13 +36,16 @@ if __name__ == '__main__':
     parser.add_argument('--size', type=int, default=220,
                         help='resizing')
     parser.add_argument('--crop_pad_inf', type=float, default=1.5,
-                        help='random number infimum for padding size when cropping')
+                        help='random number infimum for padding size when'
+                             'cropping')
     parser.add_argument('--crop_pad_sup', type=float, default=2.0,
-                        help='random number supremum for padding size when cropping')
+                        help='random number supremum for padding size when'
+                             'cropping')
     parser.add_argument('--shift', type=int, default=5,
                         help='slide an image when cropping')
     parser.add_argument('--lcn', type=bool, default=True,
-                        help='local contrast normalization for data augmentation')
+                        help='local contrast normalization for data'
+                             'augmentation')
     parser.add_argument('--joint_num', type=int, default=7)
     args = parser.parse_args()
     print(args)

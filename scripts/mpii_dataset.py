@@ -1,12 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from __future__ import print_function
 import json
-import os
-import shutil
-import sys
-import csv
-import cv2 as cv
 import numpy as np
 from scipy.io import loadmat
 
@@ -24,7 +20,6 @@ def fix_wrong_joints(joint):
 
 
 def save_joints():
-    anno_dir = 'data/mpii/mpii_human_pose_v1_u12_1'
     joint_data_fn = 'data/mpii/data.json'
     mat = loadmat('data/mpii/mpii_human_pose_v1_u12_1.mat')
 
@@ -51,7 +46,8 @@ def save_joints():
             head_y1s = anno['annorect']['y1'][0]
             head_x2s = anno['annorect']['x2'][0]
             head_y2s = anno['annorect']['y2'][0]
-            for annopoint, head_x1, head_y1, head_x2, head_y2 in zip(annopoints, head_x1s, head_y1s, head_x2s, head_y2s):
+            for annopoint, head_x1, head_y1, head_x2, head_y2 in zip(
+                    annopoints, head_x1s, head_y1s, head_x2s, head_y2s):
                 if annopoint != []:
                     head_rect = [float(head_x1[0, 0]),
                                  float(head_y1[0, 0]),
@@ -110,17 +106,17 @@ def split_train_test():
     N_test = int(N * 0.1)
     N_train = N - N_test
 
-    print 'N:', N
-    print 'N_train:', N_train
-    print 'N_test:', N_test
+    print('N:{}'.format(N))
+    print('N_train:{}'.format(N_train))
+    print('N_test:{}'.format(N_test))
 
     np.random.seed(1701)
     perm = np.random.permutation(N)
     test_indices = perm[:N_test]
     train_indices = perm[N_test:]
 
-    print 'train_indices:', len(train_indices)
-    print 'test_indices:', len(test_indices)
+    print('train_indices:{}'.format(len(train_indices)))
+    print('test_indices:{}'.format(len(test_indices)))
 
     for i in train_indices:
         datum = json.loads(all_data[i].strip())

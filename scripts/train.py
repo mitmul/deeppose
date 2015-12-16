@@ -4,6 +4,7 @@
 from __future__ import print_function
 import sys
 sys.path.append('../../scripts')  # to resume from result dir
+import re
 import six
 import logging
 import time
@@ -11,11 +12,9 @@ import os
 import imp
 import shutil
 import numpy as np
-import cPickle as pickle
-from chainer import optimizers, cuda
+from chainer import Variable, optimizers, cuda, serializers
 from transform import Transform
 from draw_loss import draw_loss_curve
-from progressbar import ProgressBar
 from multiprocessing import Process, Queue
 from cmd_options import get_arguments
 
@@ -30,66 +29,83 @@ def load_dataset(args):
 
 
 def create_result_dir(args):
-    if args.restart_from is None:
-        result_dir = 'results/' + os.path.basename(args.model).split('.')[0]
-        result_dir += '_' + time.strftime('%Y-%m-%d_%H-%M-%S_')
-        result_dir += str(time.time()).replace('.', '')
+    if args.resume_model is None:
+        result_dir = 'results/{}_{}'.format(
+            os.path.splitext(os.path.basename(args.model))[0],
+            time.strftime('%Y-%m-%d_%H-%M-%S'))
+        if os.path.exists(result_dir):
+            result_dir += '_{}'.format(np.random.randint(100))
         if not os.path.exists(result_dir):
             os.makedirs(result_dir)
-        log_fn = '%s/log.txt' % result_dir
-        logging.basicConfig(filename=log_fn, level=logging.DEBUG)
-        logging.info(args)
     else:
-        result_dir = '.'
-        log_fn = 'log.txt'
-        logging.basicConfig(filename=log_fn, level=logging.DEBUG)
-        logging.info(args)
+        result_dir = os.path.dirname(args.resume_model)
 
-    return log_fn, result_dir
+    log_fn = '%s/log.txt' % result_dir
+    logging.basicConfig(
+        format='%(asctime)s [%(levelname)s] %(message)s',
+        filename=log_fn, level=logging.DEBUG)
+    logging.info(args)
+
+    args.log_fn = log_fn
+    args.result_dir = result_dir
 
 
-def get_model_optimizer(result_dir, args):
+def get_model(args):
     model_fn = os.path.basename(args.model)
-    model_name = model_fn.split('.')[0]
-    module = imp.load_source(model_fn.split('.')[0], args.model)
-    Net = getattr(module, model_name)
+    model = imp.load_source(model_fn.split('.')[0], args.model).model
 
-    dst = '%s/%s' % (result_dir, model_fn)
-    if not os.path.exists(dst):
-        shutil.copy(args.model, dst)
+    if 'result_dir' in args:
+        dst = '%s/%s' % (args.result_dir, model_fn)
+        if not os.path.exists(dst):
+            shutil.copy(args.model, dst)
 
-    dst = '%s/%s' % (result_dir, os.path.basename(__file__))
-    if not os.path.exists(dst):
-        shutil.copy(__file__, dst)
+        dst = '%s/%s' % (args.result_dir, os.path.basename(__file__))
+        if not os.path.exists(dst):
+            shutil.copy(__file__, dst)
+
+    # load model
+    if args.resume_model is not None:
+        serializers.load_hdf5(args.resume_model, model)
 
     # prepare model
-    model = Net()
-    if args.gpu >= 0:
-        cuda.get_device(args.gpu).use()
-    if args.restart_from is not None:
-        model = pickle.load(open(args.restart_from, 'rb'))
     if args.gpu >= 0:
         model.to_gpu()
 
-    # prepare optimizer
-    if args.opt == 'AdaGrad':
-        optimizer = optimizers.AdaGrad(lr=0.0005)
-    elif args.opt == 'MomentumSGD':
-        optimizer = optimizers.MomentumSGD(lr=0.0005, momentum=0.9)
-    elif args.opt == 'Adam':
-        optimizer = optimizers.Adam()
-    else:
-        raise Exception('No optimizer is selected')
-    optimizer.setup(model)
+    return model
 
-    return model, optimizer
+
+def get_model_optimizer(args):
+    model = get_model(args)
+
+    if 'opt' in args:
+        # prepare optimizer
+        if args.opt == 'AdaGrad':
+            optimizer = optimizers.AdaGrad(lr=0.0005)
+        elif args.opt == 'MomentumSGD':
+            optimizer = optimizers.MomentumSGD(lr=0.0005, momentum=0.9)
+        elif args.opt == 'Adam':
+            optimizer = optimizers.Adam()
+        else:
+            raise Exception('No optimizer is selected')
+
+        optimizer.setup(model)
+
+        if args.resume_opt is not None:
+            serializers.load_hdf5(args.resume_opt, optimizer)
+            args.epoch_offset = int(
+                re.search('epoch-([0-9]+)', args.resume_opt).groups()[0])
+
+        return model, optimizer
+
+    else:
+        print('No optimizer generated.')
+        return model
 
 
 def load_data(trans, args, input_q, data_q):
     c = args.channel
     s = args.size
     d = args.joint_num * 2
-    xp = cuda.cupy if args.gpu >= 0 and cuda.available else np
 
     while True:
         x_batch = input_q.get()
@@ -108,10 +124,11 @@ def load_data(trans, args, input_q, data_q):
         data_q.put([input_data, label])
 
 
-def train(train_dl, N, model, optimizer, trans, args, input_q, data_q):
-    pbar = ProgressBar(N)
+def one_epoch(args, model, optimizer, epoch, input_q, data_q, train):
+    model.train = True
     perm = np.random.permutation(N)
     sum_loss = 0
+    num = 0
 
     # training
     xp = cuda.cupy if args.gpu >= 0 and cuda.available else np
@@ -121,56 +138,30 @@ def train(train_dl, N, model, optimizer, trans, args, input_q, data_q):
         input_data, label = data_q.get()
         input_data = xp.asarray(input_data, dtype=np.float32)
         label = xp.asarray(label, dtype=np.float32)
+        x = Variable(input_data, volatile=not train)
+        t = Variable(label, volatile=not train)
 
-        optimizer.zero_grads()
-        loss, pred = model.forward(input_data, label, train=True)
-        loss.backward()
-        optimizer.update()
+        if train:
+            optimizer.update(model, x, t)
+        else:
+            model(x, t)
 
-        sum_loss += float(loss.data) * args.batchsize
-        pbar.update(i + args.batchsize if (i + args.batchsize) < N else N)
+        sum_loss += float(model.loss.data) * input_data.shape[0]
+        num += input_data.shape[0]
 
-    return sum_loss
-
-
-def eval(test_dl, N, model, trans, args, input_q, data_q):
-    pbar = ProgressBar(N)
-    sum_loss = 0
-
-    # training
-    xp = cuda.cupy if args.gpu >= 0 and cuda.available else np
-    for i in six.moves.range(0, N, args.batchsize):
-        input_q.put(test_dl[i:i + args.batchsize])
-    for i in six.moves.range(0, N, args.batchsize):
-        input_data, label = data_q.get(True, None)
-        input_data = xp.asarray(input_data, dtype=np.float32)
-        label = xp.asarray(label, dtype=np.float32)
-
-        loss, pred = model.forward(input_data, label, train=False)
-        sum_loss += float(loss.data) * args.batchsize
-        pbar.update(i + args.batchsize if (i + args.batchsize) < N else N)
+        logging.info('loss:{}'.format(sum_loss / num))
 
     return sum_loss
-
-
-def get_log_msg(stage, epoch, sum_loss, N, args, st):
-    msg = 'epoch:{:02d}\t{} mean loss={}\telapsed time={} sec'.format(
-        epoch + args.epoch_offset,
-        stage,
-        sum_loss / N,
-        time.time() - st)
-
-    return msg
 
 
 if __name__ == '__main__':
     args = get_arguments()
 
     # create result dir
-    log_fn, result_dir = create_result_dir(args)
+    create_result_dir(args)
 
     # create model and optimizer
-    model, optimizer = get_model_optimizer(result_dir, args)
+    model, optimizer = get_model_optimizer(args)
     train_dl, test_dl = load_dataset(args)
     N, N_test = len(train_dl), len(test_dl)
     logging.info('# of training data:{}'.format(N))
@@ -199,27 +190,22 @@ if __name__ == '__main__':
     vdata_loader.start()
 
     # learning loop
-    for epoch in range(1, args.epoch + 1):
+    for epoch in range(args.epoch_offset + 1, args.epoch + 1):
         # train
-        st = time.time()
-        sum_loss = train(train_dl, N, model, optimizer, trans, args, tinput_q,
-                         tdata_q)
-        msg = get_log_msg('training', epoch, sum_loss, N, args, st)
-        logging.info(msg)
-        print('\n%s' % msg)
-
-        # eval
-        st = time.time()
-        sum_loss = eval(test_dl, N_test, model, trans, args, vinput_q, vdata_q)
-        msg = get_log_msg('test', epoch, sum_loss, N_test, args, st)
-        logging.info(msg)
-        print('\n%s' % msg)
+        sum_loss = one_epoch(args, model, optimizer, epoch,
+                             tinput_q, tdata_q, True)
+        logging.info('epoch:{}\ttraining loss:{}'.format(epoch, sum_loss / N))
+        sum_loss = one_epoch(args, model, optimizer, epoch,
+                             vinput_q, vdata_q, False)
+        logging.info('epoch:{}\ttest loss:{}'.format(epoch, sum_loss / N_test))
 
         if epoch == 1 or epoch % args.snapshot == 0:
-            model_fn = '{}/{}_epoch_{}.chainermodel'.format(
-                result_dir, args.prefix, epoch + args.epoch_offset)
-            pickle.dump(model, open(model_fn, 'wb'), -1)
-        draw_loss_curve(log_fn, '{}/log.jpg'.format(result_dir))
+            model_fn = '{}/epoch-{}.model'.format(args.result_dir, epoch)
+            opt_fn = '{}/epoch-{}.state'.format(args.result_dir, epoch)
+            serializers.save_hdf5(model_fn, model)
+            serializers.save_hdf5(opt_fn, optimizer)
+
+        draw_loss_curve(args.log_fn, '{}/log.jpg'.format(args.result_dir))
 
     # quit training data loading thread
     tinput_q.put(None)
@@ -228,12 +214,3 @@ if __name__ == '__main__':
     # quit data loading thread
     vinput_q.put(None)
     vdata_loader.join()
-
-    model_fn = '%s/%s_epoch_%d.chainermodel' % (
-        result_dir, args.prefix, epoch + args.epoch_offset)
-    pickle.dump(model, open(model_fn, 'wb'), -1)
-
-    input_q.put(None)
-    data_loader.join()
-
-    logging.info(time.strftime('%Y-%m-%d_%H-%M-%S'))

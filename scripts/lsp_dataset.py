@@ -3,11 +3,9 @@
 
 from __future__ import print_function
 import re
-import os
 import glob
 import argparse
 import numpy as np
-import cv2 as cv
 from scipy.io import loadmat
 from os.path import basename as b
 
@@ -32,13 +30,13 @@ if __name__ == '__main__':
     fp_train = open('%s/train_joints.csv' % args.datadir, 'w')
     fp_test = open('%s/test_joints.csv' % args.datadir, 'w')
     for img_fn in sorted(glob.glob('%s/images/*.jpg' % args.datadir)):
-        index = int(re.search(ur'im([0-9]+)', b(img_fn)).groups()[0]) - 1
+        index = int(re.search('im([0-9]+)', b(img_fn)).groups()[0]) - 1
         str_j = [str(j) for j in joints[index].flatten().tolist()]
 
         out_list = [b(img_fn)]
         out_list.extend(str_j)
         out_str = ','.join(out_list)
-        print(out_str, file=fp)
+
         if index in perm:
             print(out_str, file=fp_test)
         else:

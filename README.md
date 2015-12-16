@@ -5,10 +5,7 @@ NOTE: This is not official implementation. Original paper is [DeepPose: Human Po
 
 # Requirements
 
-- [Chainer 1.4+](https://github.com/pfnet/chainer) (Neural network framework)
-- progressbar2
-    - `pip install progressbar2`
-    - NOTE: it's not `progressbar`, needs `2`!
+- [Chainer 1.5+](https://github.com/pfnet/chainer) (Neural network framework)
 - numpy 1.9+
 - scipy 0.16+
 - scikit-learn 0.15+
@@ -40,7 +37,13 @@ This script downloads FLIC-full dataset (http://vision.grasp.upenn.edu/cgi-bin/i
 Just run:
 
 ```
-nohup python scripts/train.py > AlexNet_flic_LCN_AdaGrad_lr-0.0005.log 2>&1 &
+nohup python scripts/train.py > AlexNet_flic.log 2>&1 < /dev/null &
+```
+
+For speed:
+
+```
+CHAINER_TYPE_CHECK=0 nohup python scripts/train.py > AlexNet_flic.log 2>&1 < /dev/null &
 ```
 
 It is same as:

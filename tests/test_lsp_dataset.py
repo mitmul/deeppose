@@ -10,7 +10,8 @@ import glob
 
 
 def draw_limb(img, joints, i, j, color):
-    if joints[i][0] > 0 and joints[j][0] > 0 and joints[i][1] > 0 and joints[j][1] > 0:
+    if ((joints[i][0] > 0) and (joints[j][0] > 0) and
+            (joints[i][1] > 0) and (joints[j][1] > 0)):
         cv.line(img, joints[i], joints[j], (255, 255, 255),
                 thickness=2, lineType=cv.CV_AA)
         cv.line(img, joints[i], joints[j], color,

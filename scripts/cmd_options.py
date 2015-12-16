@@ -14,7 +14,6 @@ def get_arguments():
     parser.add_argument('--gpu', type=int, default=0)
     parser.add_argument('--epoch', type=int, default=1000)
     parser.add_argument('--batchsize', type=int, default=32)
-    parser.add_argument('--prefix', type=str, default='AlexNet_flic')
     parser.add_argument('--snapshot', type=int, default=10)
     parser.add_argument('--datadir', type=str, default='data/FLIC-full')
     parser.add_argument('--channel', type=int, default=3)
@@ -44,11 +43,13 @@ def get_arguments():
                         help='the start index of joint values in a csv line')
 
     # Optimization settings
-    parser.add_argument('--restart_from', type=str, default=None,
-                        help='*.chainermodel file path to restart from')
+    parser.add_argument('--resume_model', type=str, default=None,
+                        help='*.model file path to resume from')
+    parser.add_argument('--resume_opt', type=str, default=None,
+                        help='*.state file path to resume from')
     parser.add_argument(
         '--epoch_offset', type=int, default=0,
-        help='set greater than 0 if you restart from a chainermodel pickle')
+        help='set greater than 0 if you restart from a saved model')
     parser.add_argument('--opt', type=str, default='AdaGrad',
                         choices=['AdaGrad', 'MomentumSGD', 'Adam'])
     args = parser.parse_args()

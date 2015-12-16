@@ -3,10 +3,9 @@
 
 import os
 import csv
-from os.path import basename, splitext
+from os.path import basename
 import cv2 as cv
 import numpy as np
-import glob
 
 
 def draw_limb(img, joints, i, j, color):
@@ -28,7 +27,7 @@ def draw_joints(img, joints, line=True, text_scale=0.5):
         img = draw_limb(img, joints, 4, 5, (0, 255, 0))
         img = draw_limb(img, joints, 5, 6, (0, 255, 0))
         img = draw_limb(img, joints, 2, 4, (255, 0, 0))
-        neck = tuple((np.array(joints[2]) + np.array(joints[4])) / 2)
+        neck = tuple((np.array(joints[2]) + np.array(joints[4])) // 2)
         joints.append(neck)
         img = draw_limb(img, joints, 3, 7, (255, 0, 0))
         joints.pop()
@@ -55,9 +54,9 @@ if __name__ == '__main__':
         img = cv.imread(img_fn)
 
         joints = [int(float(j)) for j in line[1:]]
-        joints = zip(joints[0::2], joints[1::2])
+        joints = list(zip(joints[0::2], joints[1::2]))
 
         draw = draw_joints(img, joints)
         cv.imwrite('%s/%s' % (out_dir, basename(img_fn)), draw)
 
-        print img_fn
+        print(img_fn)

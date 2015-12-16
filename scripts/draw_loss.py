@@ -12,36 +12,39 @@ import numpy as np
 
 
 def draw_loss_curve(logfile, outfile):
-    train_loss = []
-    test_loss = []
-    for line in open(logfile):
-        line = line.strip()
-        if not 'epoch:' in line:
-            continue
-        epoch = int(re.search(ur'epoch:([0-9]+)', line).groups()[0])
-        if 'train' in line and 'inf' not in line:
-            tr_l = float(re.search(ur'loss=([0-9\.]+)', line).groups()[0])
-            train_loss.append([epoch, tr_l])
-        if 'test' in line and 'inf' not in line:
-            te_l = float(re.search(ur'loss=([0-9\.]+)', line).groups()[0])
-            test_loss.append([epoch, te_l])
+    try:
+        train_loss = []
+        test_loss = []
+        for line in open(logfile):
+            line = line.strip()
+            if 'epoch:' not in line:
+                continue
+            epoch = int(re.search('epoch:([0-9]+)', line).groups()[0])
+            if 'train' in line and 'inf' not in line:
+                tr_l = float(re.search('loss=([0-9\.]+)', line).groups()[0])
+                train_loss.append([epoch, tr_l])
+            if 'test' in line and 'inf' not in line:
+                te_l = float(re.search('loss=([0-9\.]+)', line).groups()[0])
+                test_loss.append([epoch, te_l])
 
-    train_loss = np.asarray(train_loss)[1:]
-    test_loss = np.asarray(test_loss)[1:]
+        train_loss = np.asarray(train_loss)[1:]
+        test_loss = np.asarray(test_loss)[1:]
 
-    if not len(train_loss) > 1:
-        return
+        if not len(train_loss) > 1:
+            return
 
-    plt.clf()
-    fig, ax1 = plt.subplots()
-    plt.plot(train_loss[:, 0], train_loss[:, 1], label='training loss')
-    plt.plot(test_loss[:, 0], test_loss[:, 1], label='test loss')
-    plt.xlim([2, len(train_loss)])
-    plt.xlabel('epoch')
-    plt.ylabel('loss')
+        plt.clf()
+        fig, ax1 = plt.subplots()
+        plt.plot(train_loss[:, 0], train_loss[:, 1], label='training loss')
+        plt.plot(test_loss[:, 0], test_loss[:, 1], label='test loss')
+        plt.xlim([2, len(train_loss)])
+        plt.xlabel('epoch')
+        plt.ylabel('loss')
 
-    plt.legend(loc='upper right')
-    plt.savefig(outfile, bbox_inches='tight')
+        plt.legend(loc='upper right')
+        plt.savefig(outfile, bbox_inches='tight')
+    except Exception as e:
+        print(str(type(e)), e)
 
 
 if __name__ == '__main__':

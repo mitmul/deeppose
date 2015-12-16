@@ -9,7 +9,6 @@ import re
 import os
 import imp
 import argparse
-import six
 import six.moves.cPickle as pickle
 import numpy as np
 import cv2 as cv

@@ -4,16 +4,12 @@
 import os
 import cv2 as cv
 import numpy as np
-from scipy.misc import imrotate
-from scipy.ndimage.interpolation import shift
-from sklearn.preprocessing import scale
-from itertools import chain
 
 
 class Transform(object):
 
     def __init__(self, **params):
-        [setattr(self, key, value) for key, value in params.iteritems()]
+        [setattr(self, key, value) for key, value in params.items()]
 
     def transform(self, datum, datadir, train=True,
                   fname_index=0, joint_index=1):
@@ -36,7 +32,7 @@ class Transform(object):
         # joint pos centerization
         h, w, c = self._img.shape
         center_pt = np.array([w / 2, h / 2], dtype=np.float32)  # x,y order
-        joints = zip(self._joints[0::2], self._joints[1::2])
+        joints = list(zip(self._joints[0::2], self._joints[1::2]))
         joints = np.array(joints, dtype=np.float32) - center_pt
         joints[:, 0] /= w
         joints[:, 1] /= h
@@ -96,10 +92,10 @@ class Transform(object):
                 self._img[:, :, ch] = im
 
     def fliplr(self):
-        if np.random.randint(2) == 1 and self.flip == True:
+        if np.random.randint(2) == 1 and self.flip:
             self._img = np.fliplr(self._img)
             self._joints[0::2] = self._img.shape[1] - self._joints[0:: 2]
-            joints = zip(self._joints[0::2], self._joints[1::2])
+            joints = list(zip(self._joints[0::2], self._joints[1::2]))
 
             # shoulder
             joints[2], joints[4] = joints[4], joints[2]
@@ -113,7 +109,7 @@ class Transform(object):
     def revert(self, img, pred):
         h, w, c = img.shape
         center_pt = np.array([w / 2, h / 2])
-        joints = np.array(zip(pred[0::2], pred[1::2]))  # x,y order
+        joints = np.array(list(zip(pred[0::2], pred[1::2])))  # x,y order
         joints[:, 0] *= w
         joints[:, 1] *= h
         joints += center_pt
