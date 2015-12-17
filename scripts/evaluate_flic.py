@@ -50,14 +50,13 @@ def create_tiled_image(perm, out_dir, result_dir, epoch, suffix, N=25):
 
     h, w, pad = 220, 220, 2
     side = int(np.ceil(np.sqrt(len(tile_fnames))))
-    canvas = np.ones((side * w + pad * (side + 1),
-                      side * h + pad * (side + 1), 3))
-    canvas *= 0
+    canvas = np.zeros((side * h + pad * (side + 1),
+                      side * w + pad * (side + 1), 3))
 
     for i, fname in enumerate(tile_fnames):
         img = cv.imread(fname)
-        x = w * (i % side) + pad * (i % side) + pad
-        y = h * (i / side) + pad * (i / side) + pad
+        x = w * (i % side) + pad * (i % side + 1)
+        y = h * (i // side) + pad * (i // side + 1)
         canvas[y:y + h, x:x + w, :] = img
 
     if args.resize > 0:
