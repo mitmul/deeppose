@@ -162,7 +162,7 @@ def one_epoch(args, model, optimizer, epoch, data, train):
     num = 0
     N = len(data)
 
-    input_q, minibatch_q = Queue(), Queue()
+    input_q, minibatch_q = Queue(), Queue(maxsize=1)
     data_loader = Process(target=load_data,
                           args=(args, input_q, minibatch_q))
     data_loader.start()
@@ -199,6 +199,12 @@ def one_epoch(args, model, optimizer, epoch, data, train):
 
 if __name__ == '__main__':
     args = get_arguments()
+    if cuda.available and args.gpu >= 0:
+        cuda.get_device(args.gpu).use()
+
+    os.environ['CHAINER_TYPE_CHECK'] = '0'
+    os.environ['CHAINER_SEED'] = args.seed
+    np.random.seed(args.seed)
 
     # create result dir
     create_result_dir(args)

@@ -13,11 +13,12 @@ def get_arguments():
         help='model definition file in models dir')
     parser.add_argument('--gpu', type=int, default=0)
     parser.add_argument('--epoch', type=int, default=1000)
-    parser.add_argument('--batchsize', type=int, default=128)
+    parser.add_argument('--batchsize', type=int, default=16)
     parser.add_argument('--snapshot', type=int, default=10)
     parser.add_argument('--datadir', type=str, default='data/FLIC-full')
     parser.add_argument('--channel', type=int, default=3)
     parser.add_argument('--test_freq', type=int, default=10)
+    parser.add_argument('--seed', type=int, default=1701)
 
     # Data argumentation settings
     parser.add_argument('--flip', type=int, default=1,
