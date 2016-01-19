@@ -82,7 +82,7 @@ def save_joints():
                             'joint_pos': joint_pos
                         }
 
-                        print >> fp, json.dumps(data)
+                        print (json.dumps(data), file=fp)
 
 
 def write_line(datum, fp):
@@ -95,7 +95,7 @@ def write_line(datum, fp):
     out = [str(o) for o in out]
     out = ','.join(out)
 
-    print >> fp, out
+    print (out, file=fp)
 
 
 def split_train_test():
