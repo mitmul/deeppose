@@ -202,8 +202,6 @@ if __name__ == '__main__':
     if cuda.available and args.gpu >= 0:
         cuda.get_device(args.gpu).use()
 
-    os.environ['CHAINER_TYPE_CHECK'] = '0'
-    os.environ['CHAINER_SEED'] = args.seed
     np.random.seed(args.seed)
 
     # create result dir
