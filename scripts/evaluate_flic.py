@@ -99,6 +99,9 @@ def test(args):
         if args.gpu >= 0:
             input_data = cuda.to_gpu(input_data.astype(np.float32))
             labels = cuda.to_gpu(labels.astype(np.float32))
+        else:
+            input_data = input_data.astype(np.float32)
+            labels = labels.astype(np.float32)
 
         x = Variable(input_data, volatile=True)
         t = Variable(labels, volatile=True)
@@ -108,6 +111,8 @@ def test(args):
             preds = cuda.to_cpu(model.pred.data)
             input_data = cuda.to_cpu(input_data)
             labels = cuda.to_cpu(labels)
+        else:
+            preds = model.pred.data
 
         for n, line in enumerate(lines):
             img_fn = line.split(',')[args.fname_index]
