@@ -1,12 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import os
+# Copyright (c) 2016 Shunta Saito
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+from os.path import basename
+from os.path import splitext
+
 import csv
-from os.path import basename, splitext
 import cv2 as cv
-import numpy as np
 import glob
+import numpy as np
+import os
 
 
 def draw_limb(img, joints, i, j, color):
@@ -65,4 +73,4 @@ if __name__ == '__main__':
         draw = draw_joints(img, joints)
         cv.imwrite('%s/%s' % (out_dir, basename(img_fn)), draw)
 
-        print img_fn
+        print(img_fn)

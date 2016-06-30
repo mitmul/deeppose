@@ -1,9 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import os
+# Copyright (c) 2016 Shunta Saito
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import cv2 as cv
 import numpy as np
+import os
 
 
 class Transform(object):
@@ -41,7 +48,7 @@ class Transform(object):
 
     def cropping(self):
         # image cropping
-        joints = self.joints.reshape((len(self.joints) / 2, 2))
+        joints = self.joints.reshape((len(self.joints) // 2, 2))
         x, y, w, h = cv.boundingRect(np.asarray([joints.tolist()]))
 
         # bounding rect extending

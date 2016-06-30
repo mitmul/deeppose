@@ -1,11 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import os
-import csv
+# Copyright (c) 2016 Shunta Saito
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 from os.path import basename
+
+import csv
 import cv2 as cv
 import numpy as np
+import os
 
 
 def draw_limb(img, joints, i, j, color):

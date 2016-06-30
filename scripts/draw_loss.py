@@ -1,14 +1,25 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# Copyright (c) 2016 Shunta Saito
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
+import argparse
+import numpy as np
 import re
 import sys
-import matplotlib
+
 if sys.platform in ['linux', 'linux2']:
+    import matplotlib
     matplotlib.use('Agg')
-import argparse
-import matplotlib.pyplot as plt
-import numpy as np
+    import matplotlib.pyplot as plt
+else:
+    import matplotlib
+    import matplotlib.pyplot as plt
 
 
 def draw_loss_curve(logfile, outfile):
@@ -50,7 +61,7 @@ def draw_loss_curve(logfile, outfile):
 
             ax2.legend(bbox_to_anchor=(0.75, -0.1), loc=9)
             ax2.set_ylim(ax1.get_ylim())
-            
+
         plt.savefig(outfile, bbox_inches='tight')
 
     except Exception as e:

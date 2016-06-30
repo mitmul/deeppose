@@ -1,9 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# Copyright (c) 2016 Shunta Saito
+
+from __future__ import absolute_import
+from __future__ import division
 from __future__ import print_function
-import numpy as np
+from __future__ import unicode_literals
 from scipy.io import loadmat
+
+import numpy as np
 
 crop_sizes = {
     '12-oc': (0, 0),

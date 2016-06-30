@@ -1,23 +1,35 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# Copyright (c) 2016 Shunta Saito
+
+from __future__ import absolute_import
+from __future__ import division
 from __future__ import print_function
-import sys
-sys.path.append('../../scripts')  # to resume from result dir
-import re
-import six
-import logging
-import time
-import os
+from __future__ import unicode_literals
+from chainer import cuda
+from chainer import optimizers
+from chainer import serializers
+from chainer import Variable
+from cmd_options import get_arguments
+from draw_loss import draw_loss_curve
+from multiprocessing import Array
+from multiprocessing import Process
+from multiprocessing import Queue
+from transform import Transform
+
 import ctypes
 import imp
-import shutil
+import logging
 import numpy as np
-from chainer import Variable, optimizers, cuda, serializers
-from transform import Transform
-from draw_loss import draw_loss_curve
-from multiprocessing import Process, Queue, Array
-from cmd_options import get_arguments
+import os
+import re
+import shutil
+import six
+import sys
+import time
+
+sys.path.append('../../scripts')  # to resume from result dir
 
 
 def load_dataset(args):
@@ -185,8 +197,8 @@ def one_epoch(args, model, optimizer, epoch, data, train):
         else:
             model(x, t)
 
-        sum_loss += float(model.loss.data) * input_data.shape[0]
-        num += input_data.shape[0]
+        sum_loss += float(model.loss.data) * len(input_data)
+        num += len(input_data)
 
         logging.info('loss:{}'.format(sum_loss / num))
 

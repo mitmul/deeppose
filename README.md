@@ -1,15 +1,29 @@
-DeepPose
-========
+# DeepPose
 
 NOTE: This is not official implementation. Original paper is [DeepPose: Human Pose Estimation via Deep Neural Networks](http://arxiv.org/abs/1312.4659).
 
 # Requirements
 
-- [Chainer 1.5+](https://github.com/pfnet/chainer) (Neural network framework)
-- numpy 1.9+
-- scipy 0.16+
-- scikit-learn 0.15+
-- OpenCV 2.4+
+- Python 2.7.11+
+
+  - [Chainer 1.5+](https://github.com/pfnet/chainer) (Neural network framework)
+  - numpy 1.9+
+  - scipy 0.16+
+  - scikit-learn 0.15+
+  - OpenCV 2.4+
+
+## Installation of dependencies
+
+```
+pip install chainer
+pip install numpy
+pip install scipy
+pip install scikit-learn
+# for python3
+conda install -c https://conda.binstar.org/menpo opencv3
+# for python2
+conda install opencv
+```
 
 # Data preparation
 
@@ -19,15 +33,17 @@ python scripts/flic_dataset.py
 python scripts/lsp_dataset.py
 ```
 
-This script downloads FLIC-full dataset (http://vision.grasp.upenn.edu/cgi-bin/index.php?n=VideoLearning.FLIC) and perform cropping regions of human and save poses as numpy files into FLIC-full directory.
+This script downloads FLIC-full dataset (<http://vision.grasp.upenn.edu/cgi-bin/index.php?n=VideoLearning.FLIC>) and perform cropping regions of human and save poses as numpy files into FLIC-full directory.
 
 ## MPII Dataset
 
 - [MPII Human Pose Dataset](http://human-pose.mpi-inf.mpg.de/#download)
 - # of training images: 18079, # of test images: 6908
-    - test images don't have any annotations
-    - so we split trining imges into training/test joint set
-    - each joint set has
+
+  - test images don't have any annotations
+  - so we split trining imges into training/test joint set
+  - each joint set has
+
 - # of training joint set: 17928, # of test joint set: 1991
 
 # Start training
@@ -81,7 +97,7 @@ See the help messages with `--help` option for details.
 # Visualize Filters of 1st conv layer
 
 - Go to result dir of a model
--  `python ../../scripts/draw_filters.py`
+- `python ../../scripts/draw_filters.py`
 
 # Visualize Prediction
 

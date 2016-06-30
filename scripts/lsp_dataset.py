@@ -1,13 +1,19 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# Copyright (c) 2016 Shunta Saito
+
+from __future__ import absolute_import
+from __future__ import division
 from __future__ import print_function
-import re
-import glob
-import argparse
-import numpy as np
-from scipy.io import loadmat
+from __future__ import unicode_literals
 from os.path import basename as b
+from scipy.io import loadmat
+
+import argparse
+import glob
+import numpy as np
+import re
 
 if __name__ == '__main__':
     # to fix test set

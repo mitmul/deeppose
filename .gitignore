@@ -9,6 +9,7 @@ ompose
 # sftp settings
 sftp-config.json
 .remote-sync.json
+.sync-config.cson
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

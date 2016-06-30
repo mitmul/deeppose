@@ -1,10 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# Copyright (c) 2016 Shunta Saito
+
+from __future__ import absolute_import
+from __future__ import division
 from __future__ import print_function
+from __future__ import unicode_literals
+from scipy.io import loadmat
+
 import json
 import numpy as np
-from scipy.io import loadmat
 
 
 def fix_wrong_joints(joint):
@@ -82,7 +88,7 @@ def save_joints():
                             'joint_pos': joint_pos
                         }
 
-                        print (json.dumps(data), file=fp)
+                        print(json.dumps(data), file=fp)
 
 
 def write_line(datum, fp):
@@ -95,7 +101,7 @@ def write_line(datum, fp):
     out = [str(o) for o in out]
     out = ','.join(out)
 
-    print (out, file=fp)
+    print(out, file=fp)
 
 
 def split_train_test():

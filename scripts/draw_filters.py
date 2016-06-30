@@ -1,14 +1,21 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import glob
-import re
-import os
+# Copyright (c) 2016 Shunta Saito
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+from chainer import cuda
+
 import argparse
 import cPickle as pickle
-import numpy as np
 import cv2 as cv
-from chainer import cuda
+import glob
+import numpy as np
+import os
+import re
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

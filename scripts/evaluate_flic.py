@@ -1,19 +1,28 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# Copyright (c) 2016 Shunta Saito
+
+from __future__ import absolute_import
+from __future__ import division
 from __future__ import print_function
-import sys
-sys.path.append('tests')
-import glob
-import re
-import os
-import imp
-import argparse
-import numpy as np
-import cv2 as cv
-from chainer import cuda, serializers, Variable
-from transform import Transform
+from __future__ import unicode_literals
+from chainer import cuda
+from chainer import serializers
+from chainer import Variable
 from test_flic_dataset import draw_joints
+from transform import Transform
+
+import argparse
+import cv2 as cv
+import glob
+import imp
+import numpy as np
+import os
+import re
+import sys
+
+sys.path.append('tests')
 
 
 def load_model(args):
@@ -51,7 +60,7 @@ def create_tiled_image(perm, out_dir, result_dir, epoch, suffix, N=25):
     h, w, pad = 220, 220, 2
     side = int(np.ceil(np.sqrt(len(tile_fnames))))
     canvas = np.zeros((side * h + pad * (side + 1),
-                      side * w + pad * (side + 1), 3))
+                       side * w + pad * (side + 1), 3))
 
     for i, fname in enumerate(tile_fnames):
         img = cv.imread(fname)
