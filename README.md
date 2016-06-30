@@ -39,13 +39,13 @@ This script downloads FLIC-full dataset (<http://vision.grasp.upenn.edu/cgi-bin/
 ## MPII Dataset
 
 - [MPII Human Pose Dataset](http://human-pose.mpi-inf.mpg.de/#download)
-- # of training images: 18079, # of test images: 6908
+- training images: 18079, test images: 6908
 
   - test images don't have any annotations
   - so we split trining imges into training/test joint set
   - each joint set has
 
-- # of training joint set: 17928, # of test joint set: 1991
+- training joint set: 17928, test joint set: 1991
 
 # Start training
 
