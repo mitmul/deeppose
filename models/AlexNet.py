@@ -8,19 +8,16 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 from chainer import Chain
+from mean_squared_error import mean_squared_error
 
 import chainer.functions as F
 import chainer.links as L
 
 
-class AlexNet_flic(Chain):
+class AlexNet(Chain):
 
-    """
-    AlexNet for FLIC dataset
-    """
-
-    def __init__(self):
-        super(AlexNet_flic, self).__init__(
+    def __init__(self, n_joints):
+        super(AlexNet, self).__init__(
             conv1=L.Convolution2D(3, 96, 11, stride=4, pad=1),
             conv2=L.Convolution2D(96, 256, 5, stride=1, pad=2),
             conv3=L.Convolution2D(256, 384, 3, stride=1, pad=1),
@@ -28,7 +25,7 @@ class AlexNet_flic(Chain):
             conv5=L.Convolution2D(384, 256, 3, stride=1, pad=1),
             fc6=L.Linear(9216, 4096),
             fc7=L.Linear(4096, 4096),
-            fc8=L.Linear(4096, 14)
+            fc8=L.Linear(4096, n_joints * 2)
         )
         self.train = True
 
@@ -50,11 +47,9 @@ class AlexNet_flic(Chain):
         h = F.dropout(F.relu(self.fc7(h)), train=self.train, ratio=0.6)
 
         self.pred = self.fc8(h)
-        self.loss = F.mean_squared_error(self.pred, t)
 
         if self.train:
+            self.loss = mean_squared_error(self.pred, t)
             return self.loss
         else:
             return self.pred
-
-model = AlexNet_flic()

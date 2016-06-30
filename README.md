@@ -31,9 +31,10 @@ conda install opencv
 bash shells/download.sh
 python scripts/flic_dataset.py
 python scripts/lsp_dataset.py
+python scripts/mpii_dataset.py
 ```
 
-This script downloads FLIC-full dataset (<http://vision.grasp.upenn.edu/cgi-bin/index.php?n=VideoLearning.FLIC>) and perform cropping regions of human and save poses as numpy files into FLIC-full directory.
+This script downloads FLIC-full dataset (<http://vision.grasp.upenn.edu/cgi-bin/index.php?n=VideoLearning.FLIC>) and perform cropping regions of human and save poses as numpy files into FLIC-full directory. Same processes are performed for LSP, MPII datasets.
 
 ## MPII Dataset
 
@@ -50,49 +51,35 @@ This script downloads FLIC-full dataset (<http://vision.grasp.upenn.edu/cgi-bin/
 
 ## For FLIC Dataset
 
-Just run:
+Starting with the prepared shells is the easiest way. If you want to run `train.py` with your own settings, please check the options first by `python scripts/train.py --help` and modify one of the following shells to customize training settings.
 
 ```
-nohup python scripts/train.py > AlexNet_flic.log 2>&1 < /dev/null &
+bash shells/train_flic.sh
 ```
 
-For speed:
+## For LSP Dataset
 
 ```
-CHAINER_TYPE_CHECK=0 nohup python scripts/train.py > AlexNet_flic.log 2>&1 < /dev/null &
+bash shells/train_lsp.sh
 ```
 
-It is same as:
+## For MPII Dataset
 
 ```
-nohup python scripts/train.py \
---model models/AlexNet_flic.py \
---gpu 0 \
---epoch 1000 \
---batchsize 32 \
---prefix AlexNet_LCN_AdaGrad_lr-0.0005 \
---snapshot 10 \
---datadir data/FLIC-full \
---channel 3 \
---flip 1 \
---size 220 \
---crop_pad_inf 1.5 \
---crop_pad_sup 2.0 \
---shift 5 \
---lcn 1 \
---joint_num 7 \
-> AlexNet_LCN_AdaGrad_lr-0.0005.log 2>&1 &
+bash shells/train_mpii.sh
 ```
-
-`--flip 1` means it performs LR flip augmentation, and `--flip 0` does nothing. `--lcn 1` means local(should be said "global"?) contrast normalization will be applied.
-
-See the help messages with `--help` option for details.
 
 ### GPU memory requirement
 
-- batchsize: 128 -> about 2870 MiB
-- batchsize: 64 -> about 1890 MiB
-- batchsize: 32 (default) -> 1374 MiB
+- AlexNet
+
+  - batchsize: 128 -> about 2870 MiB
+  - batchsize: 64 -> about 1890 MiB
+  - batchsize: 32 (default) -> 1374 MiB
+
+- ResNet50
+
+  - batchsize: 32 -> 6877 MiB
 
 # Visualize Filters of 1st conv layer
 

@@ -7,6 +7,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
+from mean_squared_error import mean_squared_error
 
 import chainer
 import chainer.functions as F

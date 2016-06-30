@@ -17,7 +17,7 @@ def get_arguments():
     # Basic parameters
     parser.add_argument(
         '--model', type=str, default='models/AlexNet_flic.py',
-        help='model definition file in models dir')
+        help='Model definition file in models dir')
     parser.add_argument('--gpu', type=int, default=0)
     parser.add_argument('--epoch', type=int, default=1000)
     parser.add_argument('--batchsize', type=int, default=16)
@@ -28,22 +28,32 @@ def get_arguments():
     parser.add_argument('--seed', type=int, default=1701)
 
     # Data argumentation settings
-    parser.add_argument('--flip', type=int, default=1,
-                        help='flip left and right for data augmentation')
+    parser.add_argument(
+        '--flip', type=int, default=1,
+        help=('Flip left and right as data augmentation. '
+              '--flip 1 means it performs LR flip augmentation, '
+              'while --flip 0 does nothing.'))
     parser.add_argument('--size', type=int, default=220,
-                        help='resizing')
+                        help='Resize input image into this big.')
+    parser.add_argument('--min_dim', type=int, default=100,
+                        help='Minimum dimension of a person.')
     parser.add_argument('--cropping', type=int, default=1)
-    parser.add_argument('--crop_pad_inf', type=float, default=1.5,
-                        help='random number infimum for padding size when'
-                             ' cropping')
-    parser.add_argument('--crop_pad_sup', type=float, default=2.0,
-                        help='random number supremum for padding size when'
-                             ' cropping')
-    parser.add_argument('--shift', type=int, default=5,
-                        help='slide an image when cropping')
-    parser.add_argument('--lcn', type=int, default=1,
-                        help='local contrast normalization for data'
-                             ' augmentation')
+    parser.add_argument(
+        '--crop_pad_inf', type=float, default=1.4,
+        help=('Minimum value for random padding size during data augmentation'
+              ' by cropping input image'))
+    parser.add_argument(
+        '--crop_pad_sup', type=float, default=1.6,
+        help=('Maximum value for random padding size during data augmentation'
+              ' by cropping input image'))
+    parser.add_argument(
+        '--shift', type=int, default=5,
+        help=('Maximum value for random translation size during data'
+              ' augmentation by translating input image'))
+    parser.add_argument(
+        '--gcn', type=int, default=1,
+        help=('Perform (1) or not (0) global contrast normalization after'
+              ' data augmentation process to input image'))
 
     # Data configuration
     parser.add_argument('--joint_num', type=int, default=7)
@@ -51,6 +61,12 @@ def get_arguments():
                         help='the index of image file name in a csv line')
     parser.add_argument('--joint_index', type=int, default=1,
                         help='the start index of joint values in a csv line')
+    parser.add_argument(
+        '--symmetric_joints', type=str, default='[[2, 4], [1, 5], [0, 6]]',
+        help='Symmetric joint ids in JSON format')
+    # flic_swap_joints = [(2, 4), (1, 5), (0, 6)]
+    # lsp_swap_joints = [(8, 9), (7, 10), (6, 11), (2, 3), (1, 4), (0, 5)]
+    # mpii_swap_joints = [(12, 13), (11, 14), (10, 15), (2, 3), (1, 4), (0, 5)]
 
     # Optimization settings
     parser.add_argument('--resume_model', type=str, default=None,

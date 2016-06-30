@@ -10,7 +10,6 @@ from __future__ import unicode_literals
 from chainer import cuda
 from chainer import serializers
 from chainer import Variable
-from test_flic_dataset import draw_joints
 from transform import Transform
 
 import argparse
@@ -22,14 +21,81 @@ import os
 import re
 import sys
 
-sys.path.append('tests')
+
+def cropping(img, joints, min_dim):
+    # image cropping
+    _joints = joints.reshape((len(joints) // 2, 2))
+    posi_joints = [(j[0], j[1]) for j in _joints if j[0] > 0 and j[1] > 0]
+    x, y, w, h = cv.boundingRect(np.asarray([posi_joints]))
+    if w < min_dim:
+        w = min_dim
+    if h < min_dim:
+        h = min_dim
+
+    # bounding rect extending
+    x -= (w * 1.5 - w) / 2
+    y -= (h * 1.5 - h) / 2
+    w *= 1.5
+    h *= 1.5
+
+    # clipping
+    x, y, w, h = [int(z) for z in [x, y, w, h]]
+    x = np.clip(x, 0, img.shape[1] - 1)
+    y = np.clip(y, 0, img.shape[0] - 1)
+    w = np.clip(w, 1, img.shape[1] - (x + 1))
+    h = np.clip(h, 1, img.shape[0] - (y + 1))
+    img = img[y:y + h, x:x + w]
+
+    # joint shifting
+    _joints = np.asarray([(j[0] - x, j[1] - y) for j in _joints])
+    joints = _joints.flatten()
+
+    return img, joints
+
+
+def resize(img, joints, size):
+    orig_h, orig_w = img.shape[:2]
+    joints[0::2] = joints[0::2] / float(orig_w) * size
+    joints[1::2] = joints[1::2] / float(orig_h) * size
+    img = cv.resize(img, (size, size), interpolation=cv.INTER_NEAREST)
+
+    return img, joints
+
+
+def contrast(img):
+    if not img.dtype == np.float32:
+        img = img.astype(np.float32)
+    # global contrast normalization
+    img -= img.reshape(-1, 3).mean(axis=0)
+    img -= img.reshape(-1, 3).std(axis=0) + 1e-5
+
+    return img
+
+
+def input_transform(datum, datadir, fname_index, joint_index, min_dim, gcn):
+    img_fn = '%s/images/%s' % (datadir, datum[fname_index])
+    if not os.path.exists(img_fn):
+        raise IOError('%s is not exist' % img_fn)
+
+    img = cv.imread(img_fn)
+    joints = np.asarray([int(float(p)) for p in datum[joint_index:]])
+    img, joints = cropping(img, joints, min_dim)
+    img, joints = resize(img, joints, size)
+    if gcn:
+        img = contrast(img)
+    else:
+        img /= 255.0
+
+    return img, joints
 
 
 def load_model(args):
     model_fn = os.path.basename(args.model)
     model_name = model_fn.split('.')[0]
-    model = imp.load_source(model_name, args.model).model
-    serializers.load_hdf5(args.param, model)
+    model = imp.load_source(model_name, args.model)
+    model = getattr(model, model_name)
+    model = model(args.joint_num)
+    serializers.load_npz(args.param, model)
     model.train = False
 
     return model
@@ -74,9 +140,6 @@ def create_tiled_image(perm, out_dir, result_dir, epoch, suffix, N=25):
 
 
 def test(args):
-    # augmentation setting
-    trans = Transform(args)
-
     # test data
     test_fn = '%s/test_joints.csv' % args.datadir
     test_dl = np.array([l.strip() for l in open(test_fn).readlines()])
@@ -86,9 +149,7 @@ def test(args):
         cuda.get_device(args.gpu).use()
     model = load_model(args)
     if args.gpu >= 0:
-        model.to_gpu()
-    else:
-        model.to_cpu()
+        model.to_gpu(args.gpu)
 
     # create output dir
     epoch = int(re.search('epoch-([0-9]+)', args.param).groups()[0])
@@ -177,6 +238,11 @@ def tile(args):
 
 
 if __name__ == '__main__':
+    sys.path.append('tests')
+    sys.path.append('models')
+
+    from test_flic_dataset import draw_joints
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--model', type=str,
                         help='model definition file in models dir')
@@ -194,35 +260,23 @@ if __name__ == '__main__':
                         help='resize the results of tiling')
     parser.add_argument('--seed', type=int, default=9,
                         help='random seed to select images to be tiled')
-    parser.add_argument('--channel', type=int, default=3)
-
-    parser.add_argument('--flip', type=int, default=0,
-                        help='flip left and right for data augmentation')
-    parser.add_argument('--cropping', type=int, default=1)
-    parser.add_argument('--size', type=int, default=220,
-                        help='resizing')
-    parser.add_argument('--lcn', type=bool, default=True,
-                        help='local contrast normalization for data'
-                             ' augmentation')
-    parser.add_argument('--crop_pad_inf', type=float, default=1.5,
-                        help='random number infimum for padding size when'
-                             ' cropping')
-    parser.add_argument('--crop_pad_sup', type=float, default=1.5,
-                        help='random number supremum for padding size when'
-                             ' cropping')
-    parser.add_argument('--shift', type=int, default=0,
-                        help='slide an image when cropping')
-
-    parser.add_argument('--joint_num', type=int, default=7)
-    parser.add_argument('--fname_index', type=int, default=0,
-                        help='the index of image file name in a csv line')
-    parser.add_argument('--joint_index', type=int, default=1,
-                        help='the start index of joint values in a csv line')
     parser.add_argument('--draw_limb', type=bool, default=True,
                         help='whether draw limb line to visualize')
     parser.add_argument('--text_scale', type=float, default=1.0,
                         help='text scale when drawing indices of joints')
     args = parser.parse_args()
+
+    result_dir = os.path.dirname(args.param)
+    log_fn = grep.grep('{}/log.txt'.format(result_dir))[0]
+    for line in open(log_fn):
+        if 'Namespace' in line:
+            args.joint_num = int(
+                re.search('joint_num=([0-9]+)', line).groups()[0])
+            args.fname_index = int(
+                re.search('fname_index=([0-9]+)', line).groups()[0])
+            args.joint_index = int(
+                re.search('joint_index=([0-9]+)', line).groups()[0])
+            break
 
     if args.mode == 'test':
         test(args)

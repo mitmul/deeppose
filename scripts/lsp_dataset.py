@@ -26,18 +26,18 @@ if __name__ == '__main__':
 
     jnt_fn = '%s/joints.mat' % args.datadir
     joints = loadmat(jnt_fn)
-    joints = joints['joints'].swapaxes(0, 2).swapaxes(1, 2)
+    joints = joints['joints'].transpose(2, 0, 1)
     joints = joints[:, :, :2]
 
     N_test = int(len(joints) * 0.1)
     perm = np.random.permutation(int(len(joints)))[:N_test].tolist()
-    print(perm)
 
     fp_train = open('%s/train_joints.csv' % args.datadir, 'w')
     fp_test = open('%s/test_joints.csv' % args.datadir, 'w')
     for img_fn in sorted(glob.glob('%s/images/*.jpg' % args.datadir)):
         index = int(re.search('im([0-9]+)', b(img_fn)).groups()[0]) - 1
-        str_j = [str(j) for j in joints[index].flatten().tolist()]
+        str_j = [str(j) if j != 0 else '-1'
+                 for j in joints[index].flatten().tolist()]
 
         out_list = [b(img_fn)]
         out_list.extend(str_j)

@@ -7,6 +7,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
+from mean_squared_error import mean_squared_error
 
 import chainer
 import chainer.functions as F
@@ -74,26 +75,25 @@ class Block(chainer.Chain):
 
     def __call__(self, x, train):
         for name, _ in self.forward:
-            f = getattr(self, name)
-            h = f(x if name == 'a' else h, train)
+            x = getattr(self, name)(x, train)
 
-        return h
+        return x
 
 
-class ResNet(chainer.Chain):
+class ResNet50(chainer.Chain):
 
     insize = 224
 
-    def __init__(self):
+    def __init__(self, n_joints):
         w = math.sqrt(2)
-        super(ResNet, self).__init__(
+        super(ResNet50, self).__init__(
             conv1=L.Convolution2D(3, 64, 7, 2, 3, w, nobias=True),
             bn1=L.BatchNormalization(64),
             res2=Block(3, 64, 64, 256, 1),
             res3=Block(4, 256, 128, 512),
             res4=Block(6, 512, 256, 1024),
             res5=Block(3, 1024, 512, 2048),
-            fc=L.Linear(2048, 1000),
+            fc=L.Linear(2048, n_joints * 2),
         )
         self.train = True
 
@@ -110,11 +110,10 @@ class ResNet(chainer.Chain):
         h = self.res4(h, self.train)
         h = self.res5(h, self.train)
         h = F.average_pooling_2d(h, 7, stride=1)
-        h = self.fc(h)
+        self.pred = self.fc(h)
 
         if self.train:
-            self.loss = F.softmax_cross_entropy(h, t)
-            self.accuracy = F.accuracy(h, t)
+            self.loss = mean_squared_error(self.pred, t)
             return self.loss
         else:
-            return h
+            return self.pred

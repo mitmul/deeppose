@@ -29,8 +29,6 @@ import six
 import sys
 import time
 
-sys.path.append('../../scripts')  # to resume from result dir
-
 
 def load_dataset(args):
     train_fn = '%s/train_joints.csv' % args.datadir
@@ -65,7 +63,10 @@ def create_result_dir(args):
 
 def get_model(args):
     model_fn = os.path.basename(args.model)
-    model = imp.load_source(model_fn.split('.')[0], args.model).model
+    model_name = model_fn.split('.')[0]
+    model = imp.load_source(model_name, args.model)
+    model = getattr(model, model_name)
+    model = model(args.joint_num)
 
     if 'result_dir' in args:
         dst = '%s/%s' % (args.result_dir, model_fn)
@@ -78,11 +79,11 @@ def get_model(args):
 
     # load model
     if args.resume_model is not None:
-        serializers.load_hdf5(args.resume_model, model)
+        serializers.load_npz(args.resume_model, model)
 
     # prepare model
     if args.gpu >= 0:
-        model.to_gpu()
+        model.to_gpu(args.gpu)
 
     return model
 
@@ -104,7 +105,7 @@ def get_model_optimizer(args):
         optimizer.setup(model)
 
         if args.resume_opt is not None:
-            serializers.load_hdf5(args.resume_opt, optimizer)
+            serializers.load_npz(args.resume_opt, optimizer)
             args.epoch_offset = int(
                 re.search('epoch-([0-9]+)', args.resume_opt).groups()[0])
 
@@ -169,7 +170,7 @@ def load_data(args, input_q, minibatch_q):
 
 
 def one_epoch(args, model, optimizer, epoch, data, train):
-    model.train = True
+    model.train = train
     sum_loss = 0
     num = 0
     N = len(data)
@@ -184,11 +185,13 @@ def one_epoch(args, model, optimizer, epoch, data, train):
         input_q.put(data[perm[i:i + args.batchsize]])
 
     # training
-    xp = cuda.cupy if args.gpu >= 0 and cuda.available else np
+    xp = cuda.cupy if args.gpu >= 0 else np
     for i in six.moves.range(0, N, args.batchsize):
         input_data, label = minibatch_q.get()
-        input_data = xp.asarray(input_data, dtype=np.float32)
-        label = xp.asarray(label, dtype=np.float32)
+        if args.gpu >= 0:
+            with cuda.Device(args.gpu):
+                input_data = xp.asarray(input_data, dtype=np.float32)
+                label = xp.asarray(label, dtype=np.float32)
         x = Variable(input_data, volatile=not train)
         t = Variable(label, volatile=not train)
 
@@ -200,7 +203,9 @@ def one_epoch(args, model, optimizer, epoch, data, train):
         sum_loss += float(model.loss.data) * len(input_data)
         num += len(input_data)
 
-        logging.info('loss:{}'.format(sum_loss / num))
+        if num % 100 == 0:
+            logging.info('epoch: {}, iter: {}, loss: {}'.format(
+                epoch, i, sum_loss / num))
 
     # quit training data loading thread
     input_q.put(None)
@@ -210,10 +215,11 @@ def one_epoch(args, model, optimizer, epoch, data, train):
 
 
 if __name__ == '__main__':
-    args = get_arguments()
-    if cuda.available and args.gpu >= 0:
-        cuda.get_device(args.gpu).use()
+    sys.path.append('../../scripts')  # to resume from result dir
+    sys.path.append('../../models')  # to resume from result dir
+    sys.path.append('models')  # to resume from result dir
 
+    args = get_arguments()
     np.random.seed(args.seed)
 
     # create result dir
@@ -226,24 +232,24 @@ if __name__ == '__main__':
     logging.info('# of training data:{}'.format(N))
     logging.info('# of test data:{}'.format(N_test))
 
-    logging.info(time.strftime('%Y-%m-%d_%H-%M-%S'))
-    logging.info('start training...')
-
     # learning loop
     for epoch in range(args.epoch_offset + 1, args.epoch + 1):
         # train
         sum_loss = one_epoch(args, model, optimizer, epoch, train_dl, True)
-        logging.info('epoch:{}\ttraining loss:{}'.format(epoch, sum_loss / N))
-
-        if epoch == 1 or epoch % args.test_freq == 0:
-            sum_loss = one_epoch(args, model, optimizer, epoch, test_dl, False)
-            logging.info('epoch:{}\ttest loss:{}'.format(
-                epoch, sum_loss / N_test))
+        logging.info('epoch: {}\ttraining loss: {}'.format(
+            epoch, sum_loss / N))
+        logging.info('-' * 20)
 
         if epoch == 1 or epoch % args.snapshot == 0:
             model_fn = '{}/epoch-{}.model'.format(args.result_dir, epoch)
             opt_fn = '{}/epoch-{}.state'.format(args.result_dir, epoch)
-            serializers.save_hdf5(model_fn, model)
-            serializers.save_hdf5(opt_fn, optimizer)
+            serializers.save_npz(model_fn, model)
+            serializers.save_npz(opt_fn, optimizer)
+
+        if epoch == 1 or epoch % args.test_freq == 0:
+            sum_loss = one_epoch(args, model, optimizer, epoch, test_dl, False)
+            logging.info('epoch: {}\ttest loss: {}'.format(
+                epoch, sum_loss / N_test))
 
         draw_loss_curve(args.log_fn, '{}/log.png'.format(args.result_dir))
+        logging.info('=' * 20)

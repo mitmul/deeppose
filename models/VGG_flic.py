@@ -8,15 +8,16 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 from chainer import Chain
+from mean_squared_error import mean_squared_error
 
 import chainer.functions as F
 import chainer.links as L
 
 
-class VGG_flic(Chain):
+class VGG(Chain):
 
-    def __init__(self):
-        super(VGG_flic, self).__init__(
+    def __init__(self, n_joints):
+        super(VGG, self).__init__(
             conv1_1=L.Convolution2D(3, 64, 3, stride=1, pad=1),
             bn1_1=L.BatchNormalization(64),
             conv1_2=L.Convolution2D(64, 64, 3, stride=1, pad=1),
@@ -50,7 +51,7 @@ class VGG_flic(Chain):
 
             fc6=L.Linear(25088, 4096),
             fc7=L.Linear(4096, 4096),
-            fc8=L.Linear(4096, 14)
+            fc8=L.Linear(4096, n_joints * 2)
         )
         self.train = True
 
@@ -83,9 +84,7 @@ class VGG_flic(Chain):
         self.pred = self.fc8(h)
 
         if t is not None:
-            self.loss = F.mean_squared_error(self.pred, t)
+            self.loss = mean_squared_error(self.pred, t)
             return self.loss
         else:
             return self.pred
-
-model = VGG_flic()

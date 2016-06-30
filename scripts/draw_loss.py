@@ -30,12 +30,13 @@ def draw_loss_curve(logfile, outfile):
             line = line.strip()
             if 'epoch:' not in line:
                 continue
-            epoch = int(re.search('epoch:([0-9]+)', line).groups()[0])
+            epoch = int(re.search('epoch:\s*([0-9]+)', line).groups()[0])
             if 'training' in line and 'inf' not in line:
-                tr_l = float(re.search('loss:([0-9\.]+)', line).groups()[0])
+                print(line)
+                tr_l = float(re.search('loss:\s*([0-9\.]+)', line).groups()[0])
                 train_loss.append([epoch, tr_l])
             if 'test' in line and 'inf' not in line:
-                te_l = float(re.search('loss:([0-9\.]+)', line).groups()[0])
+                te_l = float(re.search('loss:\s*([0-9\.]+)', line).groups()[0])
                 test_loss.append([epoch, te_l])
 
         train_loss = np.asarray(train_loss)[1:]
@@ -65,7 +66,7 @@ def draw_loss_curve(logfile, outfile):
         plt.savefig(outfile, bbox_inches='tight')
 
     except Exception as e:
-        print(str(type(e)), e)
+        print(str(type(e)), e, line)
 
 
 if __name__ == '__main__':
