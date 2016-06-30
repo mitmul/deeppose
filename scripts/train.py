@@ -238,7 +238,6 @@ if __name__ == '__main__':
         sum_loss = one_epoch(args, model, optimizer, epoch, train_dl, True)
         logging.info('epoch: {}\ttraining loss: {}'.format(
             epoch, sum_loss / N))
-        logging.info('-' * 20)
 
         if epoch == 1 or epoch % args.snapshot == 0:
             model_fn = '{}/epoch-{}.model'.format(args.result_dir, epoch)
@@ -247,6 +246,7 @@ if __name__ == '__main__':
             serializers.save_npz(opt_fn, optimizer)
 
         if epoch == 1 or epoch % args.test_freq == 0:
+            logging.info('-' * 20)
             sum_loss = one_epoch(args, model, optimizer, epoch, test_dl, False)
             logging.info('epoch: {}\ttest loss: {}'.format(
                 epoch, sum_loss / N_test))

@@ -22,5 +22,5 @@ python scripts/train.py \
 --joint_num 16 \
 --fname_index 0 \
 --joint_index 1 \
---symmetric_joints "[(12, 13), (11, 14), (10, 15), (2, 3), (1, 4), (0, 5)]" \
+--symmetric_joints "[[12, 13], [11, 14], [10, 15], [2, 3], [1, 4], [0, 5]]" \
 --opt Adam

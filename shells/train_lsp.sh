@@ -3,9 +3,9 @@
 CHAINER_TYPE_CHECK=0 \
 python scripts/train.py \
 --model models/AlexNet.py \
---gpu 0 \
+--gpu 1 \
 --epoch 1000 \
---batchsize 16 \
+--batchsize 128 \
 --snapshot 10 \
 --datadir data/lspet_dataset \
 --channel 3 \
@@ -22,5 +22,5 @@ python scripts/train.py \
 --joint_num 14 \
 --fname_index 0 \
 --joint_index 1 \
---symmetric_joints "[(8, 9), (7, 10), (6, 11), (2, 3), (1, 4), (0, 5)]" \
+--symmetric_joints "[[8, 9], [7, 10], [6, 11], [2, 3], [1, 4], [0, 5]]" \
 --opt Adam
