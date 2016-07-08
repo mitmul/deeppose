@@ -116,4 +116,5 @@ class ResNet50(chainer.Chain):
             self.loss = mean_squared_error(self.pred, t)
             return self.loss
         else:
+            self.loss = mean_squared_error(self.pred, t)
             return self.pred
