@@ -10,6 +10,7 @@ from __future__ import unicode_literals
 
 import argparse
 import cv2 as cv
+import json
 import numpy as np
 import os
 import sys
@@ -57,8 +58,9 @@ if __name__ == '__main__':
         args.datadir = datadir
         args.joint_num = n_joints
         args.min_dim = min_dim
+        args.symmetric_joints = json.dumps(swap_joints)
         # augmentation setting
-        trans = Transform(args, swap_joints)
+        trans = Transform(args)
 
         # test data
         test_fn = '%s/train_joints.csv' % args.datadir

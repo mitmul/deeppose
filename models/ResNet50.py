@@ -1,18 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 Shunta Saito
-
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
-from mean_squared_error import mean_squared_error
 
 import chainer
 import chainer.functions as F
 import chainer.links as L
 import math
+import numpy as np
 
 
 class BottleNeckA(chainer.Chain):
@@ -26,8 +24,8 @@ class BottleNeckA(chainer.Chain):
             bn2=L.BatchNormalization(ch),
             conv3=L.Convolution2D(ch, out_size, 1, 1, 0, w, nobias=True),
             bn3=L.BatchNormalization(out_size),
-            conv4=L.Convolution2D(in_size, out_size, 1,
-                                  stride, 0, w, nobias=True),
+            conv4=L.Convolution2D(
+                in_size, out_size, 1, stride, 0, w, nobias=True),
             bn4=L.BatchNormalization(out_size),
         )
 
@@ -67,7 +65,7 @@ class Block(chainer.Chain):
         super(Block, self).__init__()
         links = [('a', BottleNeckA(in_size, ch, out_size, stride))]
         for i in range(layer - 1):
-            links += [('b{}'.format(i + 1), BottleNeckB(out_size, ch))]
+            links += [('b_{}'.format(i + 1), BottleNeckB(out_size, ch))]
 
         for link in links:
             self.add_link(*link)
@@ -75,33 +73,29 @@ class Block(chainer.Chain):
 
     def __call__(self, x, train):
         for name, _ in self.forward:
-            x = getattr(self, name)(x, train)
+            f = getattr(self, name)
+            x = f(x, train)
 
         return x
 
 
 class ResNet50(chainer.Chain):
 
-    insize = 224
-
     def __init__(self, n_joints):
-        w = math.sqrt(2)
-        super(ResNet50, self).__init__(
-            conv1=L.Convolution2D(3, 64, 7, 2, 3, w, nobias=True),
-            bn1=L.BatchNormalization(64),
-            res2=Block(3, 64, 64, 256, 1),
-            res3=Block(4, 256, 128, 512),
-            res4=Block(6, 512, 256, 1024),
-            res5=Block(3, 1024, 512, 2048),
-            fc=L.Linear(2048, n_joints * 2),
-        )
         self.train = True
+        w = math.sqrt(2)
+        super(ResNet50, self).__init__()
+        links = [('conv1', L.Convolution2D(3, 64, 7, 2, 3, w, nobias=True))]
+        links += [('bn1', L.BatchNormalization(64))]
+        links += [('res2', Block(3, 64, 64, 256, 1))]
+        links += [('res3', Block(4, 256, 128, 512))]
+        links += [('res4', Block(6, 512, 256, 1024))]
+        links += [('res5', Block(3, 1024, 512, 2048))]
+        links += [('out_fc', L.Linear(None, n_joints * 2))]
+        for link in links:
+            self.add_link(*link)
 
-    def clear(self):
-        self.loss = None
-        self.accuracy = None
-
-    def __call__(self, x, t):
+    def __call__(self, x, before_fc=False):
         self.clear()
         h = self.bn1(self.conv1(x), test=not self.train)
         h = F.max_pooling_2d(F.relu(h), 3, stride=2)
@@ -109,12 +103,5 @@ class ResNet50(chainer.Chain):
         h = self.res3(h, self.train)
         h = self.res4(h, self.train)
         h = self.res5(h, self.train)
-        h = F.average_pooling_2d(h, 7, stride=1)
-        self.pred = self.fc(h)
-
-        if self.train:
-            self.loss = mean_squared_error(self.pred, t)
-            return self.loss
-        else:
-            self.loss = mean_squared_error(self.pred, t)
-            return self.pred
+        h = F.average_pooling_2d(h, h.data.shape[2], stride=1)
+        return self.out_fc(h)

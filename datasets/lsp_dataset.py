@@ -36,7 +36,7 @@ if __name__ == '__main__':
     fp_test = open('%s/test_joints.csv' % args.datadir, 'w')
     for img_fn in sorted(glob.glob('%s/images/*.jpg' % args.datadir)):
         index = int(re.search('im([0-9]+)', b(img_fn)).groups()[0]) - 1
-        str_j = [str(j) if j != 0 else '-1'
+        str_j = [str(j) if j > 0 else '-1'
                  for j in joints[index].flatten().tolist()]
 
         out_list = [b(img_fn)]

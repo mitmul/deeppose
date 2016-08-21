@@ -7,36 +7,9 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
-from chainer import cuda
-from chainer import optimizers
-from chainer import serializers
-from chainer import Variable
-from cmd_options import get_arguments
-from draw_loss import draw_loss_curve
-from multiprocessing import Array
-from multiprocessing import Process
-from multiprocessing import Queue
-from transform import Transform
 
-import ctypes
-import imp
-import logging
-import numpy as np
-import os
-import re
-import shutil
-import six
-import sys
-import time
-
-
-def load_dataset(args):
-    train_fn = '%s/train_joints.csv' % args.datadir
-    test_fn = '%s/test_joints.csv' % args.datadir
-    train_dl = np.array([l.strip() for l in open(train_fn).readlines()])
-    test_dl = np.array([l.strip() for l in open(test_fn).readlines()])
-
-    return train_dl, test_dl
+import dataset
+import loss
 
 
 def create_result_dir(args):
@@ -169,65 +142,20 @@ def load_data(args, input_q, minibatch_q):
         w.join()
 
 
-def one_epoch(args, model, optimizer, epoch, data, train):
-    model.train = train
-    sum_loss = 0
-    num = 0
-    N = len(data)
-
-    input_q, minibatch_q = Queue(), Queue(maxsize=1)
-    data_loader = Process(target=load_data,
-                          args=(args, input_q, minibatch_q))
-    data_loader.start()
-
-    perm = np.random.permutation(N)
-    for i in six.moves.range(0, N, args.batchsize):
-        input_q.put(data[perm[i:i + args.batchsize]])
-
-    # training
-    xp = cuda.cupy if args.gpu >= 0 else np
-    for i in six.moves.range(0, N, args.batchsize):
-        input_data, label = minibatch_q.get()
-        if args.gpu >= 0:
-            with cuda.Device(args.gpu):
-                input_data = xp.asarray(input_data, dtype=np.float32)
-                label = xp.asarray(label, dtype=np.float32)
-        x = Variable(input_data, volatile=not train)
-        t = Variable(label, volatile=not train)
-
-        if train:
-            optimizer.update(model, x, t)
-        else:
-            model(x, t)
-
-        sum_loss += float(model.loss.data) * len(input_data)
-        num += len(input_data)
-
-        if num % 100 == 0:
-            logging.info('epoch: {}, iter: {}, loss: {}'.format(
-                epoch, i, sum_loss / num))
-
-    # quit training data loading thread
-    input_q.put(None)
-    data_loader.join()
-
-    return sum_loss
-
-
 if __name__ == '__main__':
-    sys.path.append('../../scripts')  # to resume from result dir
-    sys.path.append('../../models')  # to resume from result dir
-    sys.path.append('models')  # to resume from result dir
-
     args = get_arguments()
     np.random.seed(args.seed)
 
-    # create result dir
     create_result_dir(args)
-
-    # create model and optimizer
     model, optimizer = get_model_optimizer(args)
-    train_dl, test_dl = load_dataset(args)
+    train_dataset = dataset.PoseDataset(
+        args.train_csv_fn, args.img_dir, args.im_size, args.fliplr,
+        args.rotate, args.rotate_range, args.zoom, args.base_zoom,
+        args.zoom_range, args.translate, args.translate_range, args.min_dim,
+        args.coord_normalize, args.gcn, args.joint_num, args.fname_index,
+        args.joint_index, args.symmetric_joints
+    )
+
     N, N_test = len(train_dl), len(test_dl)
     logging.info('# of training data:{}'.format(N))
     logging.info('# of test data:{}'.format(N_test))

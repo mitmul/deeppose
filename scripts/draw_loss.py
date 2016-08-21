@@ -45,6 +45,9 @@ def draw_loss_curve(logfile, outfile):
         if not len(train_loss) > 1:
             return
 
+        print(train_loss)
+        print(test_loss)
+
         plt.clf()
         fig, ax1 = plt.subplots()
         ax1.plot(train_loss[:, 0], train_loss[:, 1],
@@ -61,7 +64,7 @@ def draw_loss_curve(logfile, outfile):
             ax2.set_ylabel('test loss')
 
             ax2.legend(bbox_to_anchor=(0.75, -0.1), loc=9)
-            ax2.set_ylim(ax1.get_ylim())
+            # ax2.set_ylim(ax1.get_ylim())
 
         plt.savefig(outfile, bbox_inches='tight')
 

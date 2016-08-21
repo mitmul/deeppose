@@ -23,7 +23,7 @@ class AlexNet(Chain):
             conv3=L.Convolution2D(256, 384, 3, stride=1, pad=1),
             conv4=L.Convolution2D(384, 384, 3, stride=1, pad=1),
             conv5=L.Convolution2D(384, 256, 3, stride=1, pad=1),
-            fc6=L.Linear(9216, 4096),
+            fc6=L.Linear(None, 4096),
             fc7=L.Linear(4096, 4096),
             fc8=L.Linear(4096, n_joints * 2)
         )
@@ -46,10 +46,4 @@ class AlexNet(Chain):
         h = F.dropout(F.relu(self.fc6(h)), train=self.train, ratio=0.6)
         h = F.dropout(F.relu(self.fc7(h)), train=self.train, ratio=0.6)
 
-        self.pred = self.fc8(h)
-
-        if self.train:
-            self.loss = mean_squared_error(self.pred, t)
-            return self.loss
-        else:
-            return self.pred
+        return = self.fc8(h)
