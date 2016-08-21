@@ -28,6 +28,8 @@ def get_arguments():
                         default='data/FLIC-full/train_joints.csv')
     parser.add_argument('--valid_csv_fn', type=str,
                         default='data/FLIC-full/test_joints.csv')
+    parser.add_argument('--img_dir', type=str,
+                        default='data/FLIC-full/images')
     parser.add_argument('--channel', type=int, default=3)
     parser.add_argument('--test_freq', type=int, default=10)
     parser.add_argument('--seed', type=int, default=1701)

@@ -22,66 +22,62 @@ class PoseDataset(dataset_mixin.DatasetMixin):
     def __init__(self, csv_fn, img_dir, im_size, fliplr, rotate, rotate_range,
                  zoom, base_zoom, zoom_range, translate, translate_range,
                  min_dim, coord_normalize, gcn, joint_num, fname_index,
-                 joint_index, symmetric_joints):
-        self.csv_fn = csv_fn
-        self.img_dir = img_dir
-        self.im_size = im_size
-        self.fliplr = fliplr
-        self.rotate = rotate
-        self.rotate_range = rotate_range
-        self.zoom = zoom
-        self.base_zoom = base_zoom
-        self.zoom_range = zoom_range
-        self.translate = translate
-        self.translate_range = translate_range
-        self.min_dim = min_dim
-        self.coord_normalize = coord_normalize
-        self.gcn = gcn
-        self.joint_num = joint_num
-        self.fname_index = fname_index
-        self.joint_index = joint_index
+                 joint_index, symmetric_joints, ignore_label):
+        for key, val in locals().items():
+            setattr(self, key, val)
         self.symmetric_joints = json.loads(symmetric_joints)
         self.load_images()
 
-    def line_to_coords(self, line, joint_index):
-        return [float(c) for c in line[joint_index:]]
-
-    def deflatten(self, coords):
-        return np.array(list(zip(coords[0::2], coords[1::2])))
+    def get_available_joints(self, joints, ignore_joints):
+        _joints = []
+        for i, joint in enumerate(joints):
+            if ignore_joints is not None and ignore_joints[i] == 0:
+                continue
+            _joints.append(joint)
+        return np.array(_joints)
 
     def calc_joint_center(self, joints):
         x_center = (np.min(joints[:, 0]) + np.max(joints[:, 0])) / 2
         y_center = (np.min(joints[:, 1]) + np.max(joints[:, 1])) / 2
         return [x_center, y_center]
 
-    def calc_bbox(self, joints):
+    def calc_joint_bbox_size(self, joints):
         lt = np.min(joints, axis=0)
         rb = np.max(joints, axis=0)
-        return [lt[0], lt[1], rb[0], rb[1]]
+        return rb[0] - lt[0], rb[1] - lt[1]
 
     def load_images(self):
         self.images = {}
         self.joints = []
+        self.info = []
         for line in csv.reader(open(self.csv_fn)):
-            img_fn = '{}/{}'.format(self.img_dir, line[self.fname_index])
-            assert os.path.exists(img_fn), \
-                'File not found: {}'.format(img_fn)
-            image = cv.imread(img_fn)
-            coords = self.line_to_coords(line, self.joint_index)
-            joints = self.deflatten(coords)
+            image_id = line[self.fname_index]
+            if image_id in self.images:
+                image = self.images[image_id]
+            else:
+                img_fn = '{}/{}'.format(self.img_dir, image_id)
+                assert os.path.exists(img_fn), \
+                    'File not found: {}'.format(img_fn)
+                image = cv.imread(img_fn)
+                self.images[image_id] = image
+
+            coords = [float(c) for c in line[self.joint_index:]]
+            joints = np.array(list(zip(coords[0::2], coords[1::2])))
 
             # Ignore small label regions smaller than min_dim
-            x1, y1, x2, y2 = self.calc_bbox(joints)
-            joint_bbox_w, joint_bbox_h = x2 - x1, y2 - y1
-            if joint_bbox_w < self.min_dim or joint_bbox_h < self.min_dim:
+            ig = [0 if x == self.ignore_label or y == self.ignore_label else 1
+                  for x, y in joints]
+            available_joints = self.get_available_joints(joints, ig)
+            bbox_w, bbox_h = self.calc_joint_bbox_size(available_joints)
+            if bbox_w < self.min_dim or bbox_h < self.min_dim:
                 continue
 
-            if line[self.fname_index] not in self.images:
-                self.images[line[self.fname_index]] = image
-            self.joints.append((line[self.fname_index], joints))
+            self.joints.append((image_id, joints))
+            center_x, center_y = self.calc_joint_center(available_joints)
+            self.info.append((ig, bbox_w, bbox_h, center_x, center_y))
 
     def __len__(self):
-        return len(self.images)
+        return len(self.joints)
 
     def apply_fliplr(self, image, joints):
         image = cv.flip(image, 1)
@@ -90,21 +86,18 @@ class PoseDataset(dataset_mixin.DatasetMixin):
             joints[i], joints[j] = joints[j].copy(), joints[i].copy()
         return image, joints
 
-    def apply_zoom(self, image, joints, fx=None, fy=None):
-        center_x, center_y = image.shape[1] // 2, image.shape[0] // 2
+    def apply_zoom(self, image, joints, center_x, center_y, fx=None, fy=None):
         joint_vecs = joints - np.array([center_x, center_y])
         if fx is None and fy is None:
             zoom = 1.0 + np.random.uniform(-self.zoom_range, self.zoom_range)
             fx, fy = zoom, zoom
         image = cv.resize(image, None, fx=fx, fy=fy)
         joint_vecs *= np.array([fx, fy])
-        center_x, center_y = image.shape[1] // 2, image.shape[0] // 2
+        center_x, center_y = center_x * fx, center_y * fy
         joints = joint_vecs + np.array([center_x, center_y])
-
-        return image, joints
+        return image, joints, center_x, center_y
 
     def apply_translate(self, image, joints):
-        self.center_x, self.center_y = self.calc_joint_center(joints)
         dx = np.random.randint(-self.translate_range, self.translate_range)
         dy = np.random.randint(-self.translate_range, self.translate_range)
         if dx > 0:
@@ -126,32 +119,29 @@ class PoseDataset(dataset_mixin.DatasetMixin):
         joints += np.array([dx, dy])
         return image, joints
 
-    def apply_rotate(self, image, joints):
+    def apply_rotate(self, image, joints, ignore_joints):
+        available_joints = self.get_available_joints(joints, ignore_joints)
+        joint_center = self.calc_joint_center(available_joints)
         angle = np.random.randint(0, self.rotate_range)
-        center = self.calc_joint_center(joints)
-        image = transform.rotate(image, angle, center=center)
+        image = transform.rotate(image, angle, center=joint_center)
         image = (image * 255).astype(np.uint8)
         theta = -np.radians(angle)
         c, s = np.cos(theta), np.sin(theta)
         rot_mat = np.matrix('{} {}; {} {}'.format(c, -s, s, c))
-        center = np.array([image.shape[1] / 2, image.shape[0] / 2])
-        joints = rot_mat.dot((joints - center).T).T + center
+        joints = rot_mat.dot((joints - joint_center).T).T + joint_center
         return image, np.array(joints.tolist())
 
-    def crop_reshape(self, image, joints):
-        if hasattr(self, 'center_x') and hasattr(self, 'center_y'):
-            center_x, center_y = self.center_x, self.center_y
-        else:
-            center_x, center_y = self.calc_joint_center(joints)
-        out_size = int(self.im_size * self.base_zoom)
-        y_min = np.clip(center_y - out_size // 2, 0, image.shape[0])
-        y_max = np.clip(center_y + out_size // 2, 0, image.shape[0])
-        x_min = np.clip(center_x - out_size // 2, 0, image.shape[1])
-        x_max = np.clip(center_x + out_size // 2, 0, image.shape[1])
+    def crop_reshape(self, image, joints, bbox_w, bbox_h, center_x, center_y):
+        bbox_h, bbox_w = bbox_h * self.base_zoom, bbox_w * self.base_zoom
+        y_min = int(np.clip(center_y - bbox_h / 2, 0, image.shape[0]))
+        y_max = int(np.clip(center_y + bbox_h / 2, 0, image.shape[0]))
+        x_min = int(np.clip(center_x - bbox_w / 2, 0, image.shape[1]))
+        x_max = int(np.clip(center_x + bbox_w / 2, 0, image.shape[1]))
         image = image[y_min:y_max, x_min:x_max]
         joints -= np.array([x_min, y_min])
         fx, fy = self.im_size / image.shape[1], self.im_size / image.shape[0]
-        image, joints = self.apply_zoom(image, joints, fx, fy)
+        cx, cy = image.shape[1] // 2, image.shape[0] // 2
+        image, joints = self.apply_zoom(image, joints, cx, cy, fx, fy)[:2]
         return image, joints
 
     def apply_coord_normalize(self, image, joints):
@@ -171,21 +161,20 @@ class PoseDataset(dataset_mixin.DatasetMixin):
     def get_example(self, i):
         img_id, joints = self.joints[i]
         image = self.images[img_id]
+        ignore_joints, bbox_w, bbox_h, cx, cy = self.info[i]
 
-        ignore_joints = [0 if x == -1 or y == -1 else 1
-                         for i, (x, y) in enumerate(joints)]
+        if self.rotate:
+            image, joints = self.apply_rotate(image, joints, ignore_joints)
+        if self.translate:
+            image, joitns = self.apply_translate(image, joints)
+        if self.zoom:
+            image, joints, cx, cy = self.apply_zoom(image, joints, cx, cy)
+
+        image, joints = self.crop_reshape(
+            image, joints, bbox_w, bbox_h, cx, cy)
 
         if self.fliplr and np.random.randint(0, 2) == 1:
             image, joints = self.apply_fliplr(image, joints)
-        if self.zoom:
-            image, joints = self.apply_zoom(image, joints)
-        if self.translate:
-            image, joitns = self.apply_translate(image, joints)
-        if self.rotate:
-            image, joints = self.apply_rotate(image, joints)
-
-        image, joints = self.crop_reshape(image, joints)
-
         if self.coord_normalize:
             image, joints = self.apply_coord_normalize(image, joints)
         if self.gcn:
