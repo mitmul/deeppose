@@ -1,4 +1,6 @@
 #! /bin/bash
+# Copyright (c) 2016 Shunta Saito
+
 if [ ! -d data ]; then
     mkdir data
 fi

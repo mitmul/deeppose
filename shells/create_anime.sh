@@ -1,4 +1,5 @@
 #! /bin/bash
+# Copyright (c) 2016 Shunta Saito
 
 lhs=$1
 rhs=$2

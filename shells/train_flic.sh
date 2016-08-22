@@ -1,4 +1,5 @@
 #!/bin/bash
+# Copyright (c) 2016 Shunta Saito
 
 CHAINER_TYPE_CHECK=0 \
 python scripts/train.py \
