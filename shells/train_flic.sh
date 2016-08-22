@@ -7,6 +7,7 @@ python scripts/train.py \
 --epoch 100 \
 --batchsize 128 \
 --snapshot 10 \
+--valid_freq 5 \
 --train_csv_fn data/FLIC-full/train_joints.csv \
 --test_csv_fn data/FLIC-full/test_joints.csv \
 --img_dir data/FLIC-full/images \

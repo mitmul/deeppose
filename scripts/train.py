@@ -43,7 +43,8 @@ def create_result_dir(model_path, resume_model):
     return result_dir
 
 
-def create_logger(args):
+def create_logger(args, result_dir):
+    logging.basicConfig(filename='{}/log.txt'.format(result_dir))
     root = logging.getLogger()
     root.setLevel(logging.DEBUG)
     ch = logging.StreamHandler(sys.stdout)
@@ -165,7 +166,7 @@ def load_data(args, input_q, minibatch_q):
 if __name__ == '__main__':
     args = cmd_options.get_arguments()
     result_dir = create_result_dir(args.model, args.resume_model)
-    create_logger(args)
+    create_logger(args, result_dir)
     model = get_model(args.model, args.n_joints, result_dir, args.resume_model)
     model = loss.PoseEstimationError(model)
     opt = get_optimizer(model, args.opt, args.lr, adam_alpha=args.adam_alpha,
@@ -223,7 +224,7 @@ if __name__ == '__main__':
     eval_model = model.copy()
     eval_model.predictor.train = False
     trainer.extend(
-        extensions.Evaluator(test_iter, eval_model, device=0),
+        extensions.Evaluator(test_iter, eval_model, device=gpus[0]),
         trigger=(args.valid_freq, 'epoch'))
 
     trainer.run()

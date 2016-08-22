@@ -101,6 +101,9 @@ class TestPoseDataset(unittest.TestCase):
             _image = image.copy()
         if joints.ndim == 1:
             joints = np.array(list(zip(joints[0::2], joints[1::2])))
+        if ignore_joints.ndim == 1:
+            ignore_joints = np.array(
+                list(zip(ignore_joints[0::2], ignore_joints[1::2])))
         for i, (x, y) in enumerate(joints):
             if ignore_joints is not None \
                     and (ignore_joints[i][0] == 0 or ignore_joints[i][1] == 0):
@@ -215,3 +218,30 @@ class TestPoseDataset(unittest.TestCase):
             image = image.astype(np.uint8)
             self.draw_joints(
                 image, joints, 'lsp_{}_'.format(i), ignore_joints)
+
+    def test_mpii(self):
+        img_dir = 'data/mpii/images'
+        symmetric_joints = \
+            '[[12, 13], [11, 14], [10, 15], [2, 3], [1, 4], [0, 5]]'
+        np.random.rand(3)
+        dataset = self.create_dataset(
+            self.mpii_csv,
+            img_dir=img_dir,
+            symmetric_joints=symmetric_joints,
+            fliplr=True,
+            rotate=True,
+            rotate_range=10,
+            zoom=True,
+            base_zoom=1.5,
+            zoom_range=0.2,
+            translate=True,
+            translate_range=5,
+            coord_normalize=False,
+            gcn=False,
+        )
+        self.assertEqual(len(dataset), self.n_test)
+        for i in range(len(dataset)):
+            image, joints, ignore_joints = dataset.get_example(i)
+            image = image.astype(np.uint8)
+            self.draw_joints(
+                image, joints, 'mpii_{}_'.format(i), ignore_joints)
