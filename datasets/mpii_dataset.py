@@ -92,8 +92,7 @@ def save_joints():
 
 
 def write_line(datum, fp):
-    joints = sorted([[int(k), v]
-                     for k, v in datum['joint_pos'].iteritems()])
+    joints = sorted([[int(k), v] for k, v in datum['joint_pos'].items()])
     joints = np.array([j for i, j in joints]).flatten()
 
     out = [datum['filename']]

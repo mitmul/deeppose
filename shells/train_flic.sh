@@ -3,23 +3,26 @@
 CHAINER_TYPE_CHECK=0 \
 python scripts/train.py \
 --model models/AlexNet.py \
---gpu 2 \
---epoch 1000 \
+--gpus 8 \
+--epoch 100 \
 --batchsize 128 \
 --snapshot 10 \
---datadir data/FLIC-full \
---channel 3 \
+--train_csv_fn data/FLIC-full/train_joints.csv \
+--test_csv_fn data/FLIC-full/test_joints.csv \
+--img_dir data/FLIC-full/images \
 --test_freq 10 \
 --seed 1701 \
---flip 1 \
---size 220 \
---min_dim 100 \
---cropping 1 \
---crop_pad_inf 1.4 \
---crop_pad_sup 1.6 \
---shift 5 \
---gcn 1 \
---joint_num 7 \
+--im_size 220 \
+--fliplr \
+--rotate \
+--rotate_range 10 \
+--zoom \
+--zoom_range 0.2 \
+--translate \
+--translate_range 5 \
+--coord_normalize \
+--gcn \
+--n_joints 7 \
 --fname_index 0 \
 --joint_index 1 \
 --symmetric_joints "[[2, 4], [1, 5], [0, 6]]" \

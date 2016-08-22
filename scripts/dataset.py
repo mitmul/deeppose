@@ -13,6 +13,7 @@ from skimage import transform
 import csv
 import cv2 as cv
 import json
+import logging
 import numpy as np
 import os
 
@@ -27,11 +28,13 @@ class PoseDataset(dataset_mixin.DatasetMixin):
             setattr(self, key, val)
         self.symmetric_joints = json.loads(symmetric_joints)
         self.load_images()
+        logging.info('{} is ready'.format(csv_fn))
 
     def get_available_joints(self, joints, ignore_joints):
         _joints = []
         for i, joint in enumerate(joints):
-            if ignore_joints is not None and ignore_joints[i] == 0:
+            if ignore_joints is not None \
+                    and (ignore_joints[i][0] == 0 or ignore_joints[i][1] == 0):
                 continue
             _joints.append(joint)
         return np.array(_joints)
@@ -65,8 +68,8 @@ class PoseDataset(dataset_mixin.DatasetMixin):
             joints = np.array(list(zip(coords[0::2], coords[1::2])))
 
             # Ignore small label regions smaller than min_dim
-            ig = [0 if x == self.ignore_label or y == self.ignore_label else 1
-                  for x, y in joints]
+            ig = [0 if v == self.ignore_label else 1 for v in joints.flatten()]
+            ig = np.array(list(zip(ig[0::2], ig[1::2])))
             available_joints = self.get_available_joints(joints, ig)
             bbox_w, bbox_h = self.calc_joint_bbox_size(available_joints)
             if bbox_w < self.min_dim or bbox_h < self.min_dim:
@@ -180,8 +183,8 @@ class PoseDataset(dataset_mixin.DatasetMixin):
         if self.gcn:
             image, joints = self.apply_gcn(image, joints)
 
-        image = image.astype(np.float32)
-        joints = joints.astype(np.float32)
-        ignore_joints = np.array(ignore_joints, dtype=np.int32)
+        image = image.astype(np.float32).transpose(2, 0, 1)
+        joints = joints.astype(np.float32).flatten()
+        ignore_joints = np.array(ignore_joints, dtype=np.int32).flatten()
 
         return image, joints, ignore_joints

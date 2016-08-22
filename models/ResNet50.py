@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# Copyright (c) 2016 Shunta Saito
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -95,8 +97,7 @@ class ResNet50(chainer.Chain):
         for link in links:
             self.add_link(*link)
 
-    def __call__(self, x, before_fc=False):
-        self.clear()
+    def __call__(self, x):
         h = self.bn1(self.conv1(x), test=not self.train)
         h = F.max_pooling_2d(F.relu(h), 3, stride=2)
         h = self.res2(h, self.train)

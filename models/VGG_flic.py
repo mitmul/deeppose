@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# Copyright (c) 2016 Shunta Saito
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -54,7 +56,7 @@ class VGG_BN(chainer.Chain):
         for link in links:
             self.add_link(*link)
 
-    def __call__(self, x, before_fc=False):
+    def __call__(self, x):
         h = F.relu(self.bn1_1(self.conv1_1(x), test=not self.train))
         h = F.relu(self.bn1_2(self.conv1_2(h), test=not self.train))
         h = F.max_pooling_2d(h, 2, stride=2)
@@ -77,9 +79,6 @@ class VGG_BN(chainer.Chain):
         h = F.relu(self.bn5_2(self.conv5_2(h), test=not self.train))
         h = F.relu(self.bn5_3(self.conv5_3(h), test=not self.train))
         h = F.max_pooling_2d(h, 2, stride=2)
-
-        if before_fc:
-            return h.data.shape
 
         h = F.relu(self.fc6(h))
         h = F.relu(self.fc7(h))

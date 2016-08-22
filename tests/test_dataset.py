@@ -28,7 +28,7 @@ class TestPoseDataset(unittest.TestCase):
         ])
         self.line = '*,'
         self.line += ','.join([str(v) for v in self.joints.flatten().tolist()])
-        self.n_test = 100
+        self.n_test = 2
 
         # Prepare for FLIC dataset
         fd, self.flic_csv = tempfile.mkstemp()
@@ -95,9 +95,15 @@ class TestPoseDataset(unittest.TestCase):
         self.assertEqual(bbox_h, (260.60 - 220.20))
 
     def draw_joints(self, image, joints, prefix, ignore_joints):
-        _image = image.copy()
+        if image.shape[2] != 3:
+            _image = image.transpose(1, 2, 0).copy()
+        else:
+            _image = image.copy()
+        if joints.ndim == 1:
+            joints = np.array(list(zip(joints[0::2], joints[1::2])))
         for i, (x, y) in enumerate(joints):
-            if ignore_joints is not None and ignore_joints[i] == 0:
+            if ignore_joints is not None \
+                    and (ignore_joints[i][0] == 0 or ignore_joints[i][1] == 0):
                 continue
             cv.circle(_image, (int(x), int(y)), 2, (0, 0, 255), -1)
             cv.putText(

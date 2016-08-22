@@ -5,7 +5,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
-from chainer import function
+from chainer import reporter
 
 import chainer
 
@@ -32,16 +32,16 @@ class MeanSquaredError(chainer.Function):
 
     def forward(self, inputs):
         x, t, ignore = inputs
-        xp = get_array_module(x)
+        xp = chainer.cuda.get_array_module(x)
         self.count = int(ignore.sum())
-        self.diff = x * ignore - t * ignore
+        self.diff = (x * ignore - t * ignore).astype(xp.float32)
         diff = self.diff.ravel()
-        return xp.asarray(diff.dot(diff) / self.count, dtype=diff.dtype),
+        return xp.asarray(diff.dot(diff) / self.count, dtype=xp.float32),
 
     def backward(self, inputs, gy):
         coeff = gy[0] * gy[0].dtype.type(2. / self.count)
         gx0 = coeff * self.diff
-        return gx0, -gx0
+        return gx0, -gx0, None
 
 
 def mean_squared_error(x0, x1, ignore):
@@ -57,7 +57,7 @@ def mean_squared_error(x0, x1, ignore):
 class PoseEstimationError(chainer.Chain):
 
     def __init__(self, predictor):
-        super(MeanSquaredError, self)__init__(predictor=predictor)
+        super(PoseEstimationError, self).__init__(predictor=predictor)
         self.lossfun = mean_squared_error
         self.y = None
         self.loss = None

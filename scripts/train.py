@@ -7,86 +7,106 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
+from chainer import iterators
+from chainer import optimizers
+from chainer import serializers
+from chainer import training
+from chainer.training import extensions
 
+import chainer
+import cmd_options
 import dataset
+import imp
+import logger
+import logging
 import loss
+import os
+import shutil
+import sys
+import tempfile
+import time
 
 
-def create_result_dir(args):
-    if args.resume_model is None:
-        result_dir = 'results/{}_{}'.format(
-            os.path.splitext(os.path.basename(args.model))[0],
+def create_result_dir(model_path, resume_model):
+    if not os.path.exists('results'):
+        os.mkdir('results')
+    if resume_model is None:
+        prefix = '{}_{}'.format(
+            os.path.splitext(os.path.basename(model_path))[0],
             time.strftime('%Y-%m-%d_%H-%M-%S'))
-        if os.path.exists(result_dir):
-            result_dir += '_{}'.format(np.random.randint(100))
+        result_dir = tempfile.mkdtemp(prefix=prefix, dir='results')
         if not os.path.exists(result_dir):
             os.makedirs(result_dir)
     else:
-        result_dir = os.path.dirname(args.resume_model)
+        result_dir = os.path.dirname(resume_model)
 
-    log_fn = '%s/log.txt' % result_dir
-    logging.basicConfig(
-        format='%(asctime)s [%(levelname)s] %(message)s',
-        filename=log_fn, level=logging.DEBUG)
+    return result_dir
+
+
+def create_logger(args):
+    root = logging.getLogger()
+    root.setLevel(logging.DEBUG)
+    ch = logging.StreamHandler(sys.stdout)
+    ch.setLevel(logging.DEBUG)
+    msg_format = '%(asctime)s [%(levelname)s] %(message)s'
+    formatter = logging.Formatter(msg_format)
+    ch.setFormatter(formatter)
+    root.addHandler(ch)
+    logging.info(sys.version_info)
+    logging.info('chainer version: {}'.format(chainer.__version__))
+    logging.info('cuda: {}, cudnn: {}'.format(
+        chainer.cuda.available, chainer.cuda.cudnn_enabled))
     logging.info(args)
 
-    args.log_fn = log_fn
-    args.result_dir = result_dir
 
-
-def get_model(args):
-    model_fn = os.path.basename(args.model)
+def get_model(model_path, n_joints, result_dir, resume_model):
+    model_fn = os.path.basename(model_path)
     model_name = model_fn.split('.')[0]
-    model = imp.load_source(model_name, args.model)
+    model = imp.load_source(model_name, model_path)
     model = getattr(model, model_name)
-    model = model(args.joint_num)
 
-    if 'result_dir' in args:
-        dst = '%s/%s' % (args.result_dir, model_fn)
-        if not os.path.exists(dst):
-            shutil.copy(args.model, dst)
+    # Initialize
+    model = model(n_joints)
 
-        dst = '%s/%s' % (args.result_dir, os.path.basename(__file__))
-        if not os.path.exists(dst):
-            shutil.copy(__file__, dst)
+    # Copy files
+    dst = '{}/{}'.format(result_dir, model_fn)
+    if not os.path.exists(dst):
+        shutil.copy(model_path, dst)
 
     # load model
-    if args.resume_model is not None:
-        serializers.load_npz(args.resume_model, model)
-
-    # prepare model
-    if args.gpu >= 0:
-        model.to_gpu(args.gpu)
+    if resume_model is not None:
+        serializers.load_npz(resume_model, model)
 
     return model
 
 
-def get_model_optimizer(args):
-    model = get_model(args)
-
-    if 'opt' in args:
-        # prepare optimizer
-        if args.opt == 'AdaGrad':
-            optimizer = optimizers.AdaGrad(lr=args.lr)
-        elif args.opt == 'MomentumSGD':
-            optimizer = optimizers.MomentumSGD(lr=args.lr, momentum=0.9)
-        elif args.opt == 'Adam':
-            optimizer = optimizers.Adam()
-        else:
-            raise Exception('No optimizer is selected')
-
-        optimizer.setup(model)
-
-        if args.resume_opt is not None:
-            serializers.load_npz(args.resume_opt, optimizer)
-            args.epoch_offset = int(
-                re.search('epoch-([0-9]+)', args.resume_opt).groups()[0])
-
-        return model, optimizer
-
+def get_optimizer(model, opt, lr, adam_alpha=None, adam_beta1=None,
+                  adam_beta2=None, adam_eps=None, weight_decay=None,
+                  resume_opt=None):
+    if opt == 'MomentumSGD':
+        optimizer = optimizers.MomentumSGD(lr=lr, momentum=0.9)
+    elif opt == 'Adam':
+        optimizer = optimizers.Adam(
+            alpha=adam_alpha, beta1=adam_beta1,
+            beta2=adam_beta2, eps=adam_eps)
+    elif opt == 'AdaGrad':
+        optimizer = optimizers.AdaGrad(lr=lr)
+    elif opt == 'RMSprop':
+        optimizer = optimizers.RMSprop(lr=lr)
     else:
-        print('No optimizer generated.')
-        return model
+        raise Exception('No optimizer is selected')
+
+    # The first model as the master model
+    optimizer.setup(model)
+
+    if opt == 'MomentumSGD':
+        optimizer.add_hook(
+            chainer.optimizer.WeightDecay(weight_decay))
+
+    if resume_opt is not None:
+        serializers.load_npz(resume_opt, optimizer)
+
+    return optimizer
 
 
 def transform(args, x_queue, datadir, fname_index, joint_index, o_queue):
@@ -143,41 +163,67 @@ def load_data(args, input_q, minibatch_q):
 
 
 if __name__ == '__main__':
-    args = get_arguments()
-    np.random.seed(args.seed)
-
-    create_result_dir(args)
-    model, optimizer = get_model_optimizer(args)
+    args = cmd_options.get_arguments()
+    result_dir = create_result_dir(args.model, args.resume_model)
+    create_logger(args)
+    model = get_model(args.model, args.n_joints, result_dir, args.resume_model)
+    model = loss.PoseEstimationError(model)
+    opt = get_optimizer(model, args.opt, args.lr, adam_alpha=args.adam_alpha,
+                        adam_beta1=args.adam_beta1, adam_beta2=args.adam_beta2,
+                        adam_eps=args.adam_eps, weight_decay=args.weight_decay,
+                        resume_opt=args.resume_opt)
     train_dataset = dataset.PoseDataset(
         args.train_csv_fn, args.img_dir, args.im_size, args.fliplr,
         args.rotate, args.rotate_range, args.zoom, args.base_zoom,
         args.zoom_range, args.translate, args.translate_range, args.min_dim,
-        args.coord_normalize, args.gcn, args.joint_num, args.fname_index,
-        args.joint_index, args.symmetric_joints
+        args.coord_normalize, args.gcn, args.n_joints, args.fname_index,
+        args.joint_index, args.symmetric_joints, args.ignore_label
+    )
+    test_dataset = dataset.PoseDataset(
+        args.test_csv_fn, args.img_dir, args.im_size, args.fliplr,
+        args.rotate, args.rotate_range, args.zoom, args.base_zoom,
+        args.zoom_range, args.translate, args.translate_range, args.min_dim,
+        args.coord_normalize, args.gcn, args.n_joints, args.fname_index,
+        args.joint_index, args.symmetric_joints, args.ignore_label
     )
 
-    N, N_test = len(train_dl), len(test_dl)
-    logging.info('# of training data:{}'.format(N))
-    logging.info('# of test data:{}'.format(N_test))
+    train_iter = iterators.MultiprocessIterator(train_dataset, args.batchsize)
+    test_iter = iterators.MultiprocessIterator(
+        test_dataset, args.batchsize, repeat=False, shuffle=False)
 
-    # learning loop
-    for epoch in range(args.epoch_offset + 1, args.epoch + 1):
-        # train
-        sum_loss = one_epoch(args, model, optimizer, epoch, train_dl, True)
-        logging.info('epoch: {}\ttraining loss: {}'.format(
-            epoch, sum_loss / N))
+    gpus = [int(i) for i in args.gpus.split(',')]
+    devices = {'main': gpus[0]}
+    if len(gpus) > 2:
+        for gid in gpus[1:]:
+            devices.update({'gpu{}'.format(gid): gid})
+    updater = training.ParallelUpdater(train_iter, opt, devices=devices)
 
-        if epoch == 1 or epoch % args.snapshot == 0:
-            model_fn = '{}/epoch-{}.model'.format(args.result_dir, epoch)
-            opt_fn = '{}/epoch-{}.state'.format(args.result_dir, epoch)
-            serializers.save_npz(model_fn, model)
-            serializers.save_npz(opt_fn, optimizer)
+    interval = (args.snapshot, 'epoch')
+    trainer = training.Trainer(updater, (args.epoch, 'epoch'), out=result_dir)
+    trainer.extend(extensions.dump_graph('main/loss'))
 
-        if epoch == 1 or epoch % args.test_freq == 0:
-            logging.info('-' * 20)
-            sum_loss = one_epoch(args, model, optimizer, epoch, test_dl, False)
-            logging.info('epoch: {}\ttest loss: {}'.format(
-                epoch, sum_loss / N_test))
+    # Save parameters and optimization state
+    trainer.extend(extensions.snapshot_object(
+        model, 'epoch-{.updater.epoch}.model'), trigger=interval)
+    trainer.extend(extensions.snapshot_object(
+        opt, 'epoch-{.updater.epoch}.state'), trigger=interval)
+    trainer.extend(extensions.snapshot(), trigger=interval)
 
-        draw_loss_curve(args.log_fn, '{}/log.png'.format(args.result_dir))
-        logging.info('=' * 20)
+    if args.opt == 'MomentumSGD' or args.opt == 'AdaGrad':
+        trainer.reporter.add_observer('lr', opt.lr)
+        trainer.extend(IntervalShift(
+            'lr', args.lr, args.lr_decay_freq, args.lr_decay_ratio))
+
+    # Show log
+    trainer.extend(
+        extensions.LogReport(trigger=(args.show_log_iter, 'iteration')))
+    trainer.extend(logger.LogPrinter(
+        ['epoch', 'main/loss', 'validation/main/loss', 'lr']))
+
+    eval_model = model.copy()
+    eval_model.predictor.train = False
+    trainer.extend(
+        extensions.Evaluator(test_iter, eval_model, device=0),
+        trigger=(args.valid_freq, 'epoch'))
+
+    trainer.run()

@@ -7,14 +7,13 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
-from chainer import Chain
-from mean_squared_error import mean_squared_error
 
+import chainer
 import chainer.functions as F
 import chainer.links as L
 
 
-class AlexNet(Chain):
+class AlexNet(chainer.Chain):
 
     def __init__(self, n_joints):
         super(AlexNet, self).__init__(
@@ -23,13 +22,13 @@ class AlexNet(Chain):
             conv3=L.Convolution2D(256, 384, 3, stride=1, pad=1),
             conv4=L.Convolution2D(384, 384, 3, stride=1, pad=1),
             conv5=L.Convolution2D(384, 256, 3, stride=1, pad=1),
-            fc6=L.Linear(None, 4096),
+            fc6=L.Linear(9216, 4096),
             fc7=L.Linear(4096, 4096),
             fc8=L.Linear(4096, n_joints * 2)
         )
         self.train = True
 
-    def __call__(self, x, t):
+    def __call__(self, x):
         h = F.relu(self.conv1(x))
         h = F.max_pooling_2d(h, 3, stride=2)
         h = F.local_response_normalization(h)
@@ -46,4 +45,4 @@ class AlexNet(Chain):
         h = F.dropout(F.relu(self.fc6(h)), train=self.train, ratio=0.6)
         h = F.dropout(F.relu(self.fc7(h)), train=self.train, ratio=0.6)
 
-        return = self.fc8(h)
+        return self.fc8(h)
