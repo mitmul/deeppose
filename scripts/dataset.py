@@ -129,7 +129,7 @@ class PoseDataset(dataset_mixin.DatasetMixin):
         image = (image * 255).astype(np.uint8)
         theta = -np.radians(angle)
         c, s = np.cos(theta), np.sin(theta)
-        rot_mat = np.matrix('{} {}; {} {}'.format(c, -s, s, c))
+        rot_mat = np.matrix([[c, -s], [s, c]])
         joints = rot_mat.dot((joints - joint_center).T).T + joint_center
         return image, np.array(joints.tolist())
 
