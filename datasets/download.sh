@@ -11,7 +11,7 @@ wget http://vision.grasp.upenn.edu/video/FLIC-full.zip
 unzip FLIC-full.zip
 rm -rf FLIC-full.zip
 cd FLIC-full
-wget http://cims.nyu.edu/~tompson/data/tr_plus_indices.mat
+wget https://cims.nyu.edu/~tompson/data/tr_plus_indices.mat
 cd ..
 
 # Get LSP Extended Training Dataset
