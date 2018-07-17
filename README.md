@@ -5,48 +5,20 @@ NOTE: This is not official implementation. Original paper is [DeepPose: Human Po
 # Requirements
 
 - Python 3.5.1+
-  - [Chainer 1.13.0+](https://github.com/pfnet/chainer)
-  - numpy 1.9+
-  - scikit-image 0.11.3+
-  - OpenCV 3.1.0+
+  - [Chainer](https://chainer.org/) 4.2.0
+  - [CuPy](https://cupy.chainer.org/) 4.2.0
+  - [ChainerCV](http://chainercv.readthedocs.io/en/stable/index.html) 0.10.0
+  - [NumPy](http://numpy.org/) 1.14.5
+  - [opencv-python](https://pypi.org/project/opencv-python/) 3.4.1.15
 
-I strongly recommend to use Anaconda environment. This repo may be able to be used in Python 2.7 environment, but I haven't tested.
-
-## Installation of dependencies
-
-```
-pip install chainer
-pip install numpy
-pip install scikit-image
-# for python3
-conda install -c https://conda.binstar.org/menpo opencv3
-# for python2
-conda install opencv
-```
-
-# Dataset preparation
+# Download Datasets
 
 ```
-bash datasets/download.sh
-python datasets/flic_dataset.py
-python datasets/lsp_dataset.py
-python datasets/mpii_dataset.py
+bash download.sh
 ```
 
-- [FLIC-full dataset](http://vision.grasp.upenn.edu/cgi-bin/index.php?n=VideoLearning.FLIC)
-- [LSP Extended dataset](http://www.comp.leeds.ac.uk/mat4saj/lspet_dataset.zip)
-- **MPII dataset**
-    - [Annotation](http://datasets.d2.mpi-inf.mpg.de/leonid14cvpr/mpii_human_pose_v1_u12_1.tar.gz)
-    - [Images](http://datasets.d2.mpi-inf.mpg.de/andriluka14cvpr/mpii_human_pose_v1.tar.gz)
-
-## MPII Dataset
-
-- [MPII Human Pose Dataset](http://human-pose.mpi-inf.mpg.de/#download)
-- training images: 18079, test images: 6908
-  - test images don't have any annotations
-  - so we split trining imges into training/test joint set
-  - each joint set has
-- training joint set: 17928, test joint set: 1991
+- [FLIC-full dataset](https://bensapp.github.io/flic-dataset.html)
+- [LSP Extended dataset](http://sam.johnson.io/research/lspet.html)
 
 # Start training
 
