@@ -1,10 +1,9 @@
-# OSX specific
-.DS_Store
-
 # dirs
 data
 results
-ompose
+
+# OSX specific
+.DS_Store
 
 # sftp settings
 sftp-config.json

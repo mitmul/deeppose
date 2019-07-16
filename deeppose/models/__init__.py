@@ -1,0 +1,1 @@
+from deeppose.models.alexnet import AlexNet

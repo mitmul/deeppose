@@ -2,18 +2,14 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2016 Shunta Saito
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
 from chainer import reporter
 
 import chainer
 
 
-class MeanSquaredError(chainer.Function):
+class L2Loss(chainer.FunctionNode):
 
-    """Mean squared error (a.k.a. Euclidean loss) function.
+    """L2 loss function.
 
     In forward method, it calculates mean squared error between two variables
     with ignoring all elements that the value of ignore_joints at the same
