@@ -2,7 +2,7 @@ import numpy as np
 from chainercv import transforms
 
 
-def crop_with_joints(img, point, scale_h=1.5, sacle_w=1.2):
+def crop_with_joints(img, point, scale_h=1.5, sacle_w=1.2, random_offset_ratio_y=0, random_offset_ratio_x=0):
     min_y, min_x = point.min(axis=0)
     max_y, max_x = point.max(axis=0)
 
@@ -20,6 +20,15 @@ def crop_with_joints(img, point, scale_h=1.5, sacle_w=1.2):
     new_max_x = int(np.clip(new_min_x + new_width, 0, img_width))
     new_min_y = int(np.clip(center_y - new_height / 2, 0, img_height))
     new_max_y = int(np.clip(new_min_y + new_height, 0, img_width))
+
+    offset_y = random_offset_ratio_y * new_height / 2
+    offset_y = np.random.uniform(-offset_y, offset_y)
+    offset_x = random_offset_ratio_x * new_width / 2
+    offset_x = np.random.uniform(-offset_x, offset_x)
+    new_min_x = int(np.clip(new_min_x + offset_x, 0, min_x))
+    new_max_x = int(np.clip(new_max_x + offset_x, max_x, img_width))
+    new_min_y = int(np.clip(new_min_y + offset_y, 0, min_y))
+    new_max_y = int(np.clip(new_max_y + offset_y, max_y, img_width))
 
     crop = img[:, new_min_y:new_max_y, new_min_x:new_max_x]
     point = point - np.array([new_min_y, new_min_x])
@@ -41,3 +50,5 @@ def lr_flip(img, point):
     point = transforms.flip_point([point], (height, width), x_flip=True)[0]
 
     return img, point
+
+

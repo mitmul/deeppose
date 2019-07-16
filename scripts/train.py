@@ -64,11 +64,14 @@ class TrainTransform(object):
         self.insize = insize
         self.scale_h = 1.5
         self.scale_w = 1.2
+        self.random_offset_ratio_y = 0.2
+        self.random_offset_ratio_x = 0.2
 
     def __call__(self, x):
         img, point = x
 
-        img, point = common.crop_with_joints(img, point, self.scale_h, self.scale_w)
+        img, point = common.crop_with_joints(
+            img, point, self.scale_h, self.scale_w, self.random_offset_ratio_y, self.random_offset_ratio_x)
         img, point = common.to_square(img, point, (self.insize, self.insize))
 
         if random.randint(0, 1) == 1:
@@ -144,7 +147,7 @@ def main():
 
     trainer.extend(extensions.Evaluator(val_iter, model, device=device), trigger=val_interval)
     trainer.extend(extensions.snapshot(), trigger=val_interval)
-    trainer.extend(extensions.snapshot_object(model, 'model_iter_{.updater.iteration}'), trigger=val_interval)
+    trainer.extend(extensions.snapshot_object(model, 'model_epoch_{.updater.epoch}'), trigger=val_interval)
     trainer.extend(extensions.LogReport(trigger=log_interval))
     trainer.extend(extensions.observe_lr(), trigger=log_interval)
     trainer.extend(extensions.PrintReport(
